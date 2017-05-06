@@ -89,6 +89,14 @@ public:
      * @return The tracks' duration.
      */
     std::chrono::time_point<std::chrono::system_clock> get_duration();
+
+    /*!
+     * Gets the playback state. Paused/playing/stopped etc.
+     *
+     * @return Current playback state
+     */
+    State get_state();
+
 private:
 
     /*!
@@ -111,6 +119,7 @@ private:
     std::unique_ptr<std::thread> thread;
     uint32_t volume;
     std::atomic<State> play_state;
+    std::string track_filepath;
 
     std::condition_variable notifier;
     std::mutex notifier_lock;

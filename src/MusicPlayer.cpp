@@ -5,6 +5,7 @@
 #include <cstring>
 #include <iostream>
 #include "../include/MusicPlayer.h"
+#include "../include/Log.h"
 
 #define MAX_AUDIO_FRAME_SIZE 192000 //1 second of 48khz 32bit audio
 
@@ -29,98 +30,109 @@ MusicPlayer::~MusicPlayer()
 
 bool MusicPlayer::load(const std::string &filepath)
 {
-    //Unload anything previously loaded
-    unload();
-
-    //Load the file using ffmpeg
-    av_container = avformat_alloc_context();
-    if(avformat_open_input(&av_container, filepath.c_str(), NULL, NULL) < 0)
+    try
     {
-        throw std::runtime_error("Could not open file: " + filepath);
-    }
+        //Unload anything previously loaded
+        unload();
+        track_filepath = filepath;
+        frlog << Log::info << "Loading track: " << filepath << Log::end;
 
-    if(avformat_find_stream_info(av_container, NULL) < 0)
-    {
-        throw std::runtime_error("Could not find file info for: " + filepath);
-    }
-
-    av_dump_format(av_container, 0, filepath.c_str(), false);
-    stream_id = -1;
-    for(int i = 0; i < av_container->nb_streams; i++)
-    {
-        if(av_container->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO)
+        //Load the file using ffmpeg
+        av_container = avformat_alloc_context();
+        if(avformat_open_input(&av_container, filepath.c_str(), NULL, NULL) < 0)
         {
-            stream_id = i;
-            break;
+            throw std::runtime_error("Could not open file: " + filepath);
         }
-    }
-    if(stream_id == -1)
-    {
-        throw std::runtime_error("Could not find audio stream for: " + filepath);
-    }
 
-    av_codec_context = av_container->streams[stream_id]->codec;
-    av_codec = avcodec_find_decoder(av_codec_context->codec_id);
+        if(avformat_find_stream_info(av_container, NULL) < 0)
+        {
+            throw std::runtime_error("Could not find file info");
+        }
 
-    if(av_codec == NULL)
-    {
-        throw std::runtime_error("avcodec_find_decoder() failed, cannot find codec.");
-    }
+        av_dump_format(av_container, 0, filepath.c_str(), false);
+        stream_id = -1;
+        for(int i = 0; i < av_container->nb_streams; i++)
+        {
+            if(av_container->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO)
+            {
+                stream_id = i;
+                break;
+            }
+        }
+        if(stream_id == -1)
+        {
+            throw std::runtime_error("Could not find audio stream");
+        }
 
-    if(avcodec_open2(av_codec_context, av_codec, NULL) < 0)
-    {
-        throw std::runtime_error("avcodec_open2() failed, cannot open codec.");
-    }
+        av_codec_context = av_container->streams[stream_id]->codec;
+        av_codec = avcodec_find_decoder(av_codec_context->codec_id);
+
+        if(av_codec == NULL)
+        {
+            throw std::runtime_error("avcodec_find_decoder() failed, cannot find codec.");
+        }
+
+        if(avcodec_open2(av_codec_context, av_codec, NULL) < 0)
+        {
+            throw std::runtime_error("avcodec_open2() failed, cannot open codec.");
+        }
 
 
-    //Setup libao, to play the audio
-    AVSampleFormat sfmt = av_codec_context->sample_fmt;
-    if(sfmt == AV_SAMPLE_FMT_U8)
-    {
-        ao_format.bits = 8;
-    }
-    else if(sfmt == AV_SAMPLE_FMT_S16)
-    {
-        ao_format.bits = 16;
-    }
-    else if(sfmt == AV_SAMPLE_FMT_S32)
-    {
-        ao_format.bits = 32;
-    }
-    else if(sfmt == AV_SAMPLE_FMT_S16P)
-    {
-        ao_format.bits = 16;
-        is_planar = true;
-    }
-    else if(sfmt == AV_SAMPLE_FMT_S32P)
-    {
-        ao_format.bits = 32;
-        is_planar = true;
-    }
-    else
-    {
-        throw std::runtime_error("Unsupported audio type: " + std::to_string(sfmt));
-    }
+        //Setup libao, to play the audio
+        AVSampleFormat sfmt = av_codec_context->sample_fmt;
+        if(sfmt == AV_SAMPLE_FMT_U8)
+        {
+            ao_format.bits = 8;
+        }
+        else if(sfmt == AV_SAMPLE_FMT_S16)
+        {
+            ao_format.bits = 16;
+        }
+        else if(sfmt == AV_SAMPLE_FMT_S32)
+        {
+            ao_format.bits = 32;
+        }
+        else if(sfmt == AV_SAMPLE_FMT_S16P)
+        {
+            ao_format.bits = 16;
+            is_planar = true;
+        }
+        else if(sfmt == AV_SAMPLE_FMT_S32P)
+        {
+            ao_format.bits = 32;
+            is_planar = true;
+        }
+        else
+        {
+            throw std::runtime_error("Unsupported audio type " + std::to_string(sfmt));
+        }
 
-    plane_size = ao_format.bits / 8;
-    ao_format.channels = av_codec_context->channels;
-    ao_format.rate = av_codec_context->sample_rate;
-    ao_format.byte_format = AO_FMT_NATIVE;
-    ao_format.matrix = 0;
+        plane_size = ao_format.bits / 8;
+        ao_format.channels = av_codec_context->channels;
+        ao_format.rate = av_codec_context->sample_rate;
+        ao_format.byte_format = AO_FMT_NATIVE;
+        ao_format.matrix = 0;
 
-    ao_output = ao_open_live(ao_driver, &ao_format, NULL);
-    if(ao_output == NULL)
-    {
-        throw std::runtime_error("Failed to initialise libao");
+        ao_output = ao_open_live(ao_driver, &ao_format, NULL);
+        if(ao_output == NULL)
+        {
+            throw std::runtime_error("Failed to initialise libao");
+        }
+
+        thread = std::unique_ptr<std::thread>(new std::thread(std::bind(&MusicPlayer::play_thread, this)));
     }
-
-    thread = std::unique_ptr<std::thread>(new std::thread(std::bind(&MusicPlayer::play_thread, this)));
+    catch(const std::exception &e)
+    {
+        frlog << Log::crit << "Failed to load " << filepath << ": " << e.what() << Log::end;
+        return false;
+    }
 
     return true;
 }
 
 void MusicPlayer::unload()
 {
+    frlog << Log::info << "Unloading: " << track_filepath << Log::end;
     set_state(State::Stopped);
     notifier.notify_all();
     if(thread && thread->joinable())
@@ -228,6 +240,12 @@ void MusicPlayer::play_thread()
 
 void MusicPlayer::set_state(MusicPlayer::State state)
 {
+    frlog << Log::info << "Setting state of " << track_filepath << " to: " << state << Log::end;
     play_state = state;
     notifier.notify_all();
+}
+
+MusicPlayer::State MusicPlayer::get_state()
+{
+    return play_state;
 }

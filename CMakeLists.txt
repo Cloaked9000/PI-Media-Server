@@ -14,7 +14,7 @@ FIND_PACKAGE(AO)
 INCLUDE_DIRECTORIES(${AO_INCLUDE_DIRS})
 
 
-set(SOURCE_FILES main.cpp src/MusicPlayer.cpp include/MusicPlayer.h)
+set(SOURCE_FILES main.cpp src/MusicPlayer.cpp include/MusicPlayer.h src/APIServer.cpp include/APIServer.h include/Log.h src/Filesystem.cpp include/Filesystem.h)
 add_executable(MediaServer ${SOURCE_FILES})
 TARGET_LINK_LIBRARIES(MediaServer ${FRNETLIB_LIBRARIES} -pthread)
 TARGET_LINK_LIBRARIES(MediaServer ${FFMPEG_LIBRARIES})
