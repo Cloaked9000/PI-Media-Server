@@ -8,6 +8,8 @@
 #include <chrono>
 #include <thread>
 #include <atomic>
+#include <mutex>
+#include <condition_variable>
 
 extern "C" {
 #include <libavformat/avformat.h>
@@ -89,12 +91,29 @@ public:
     std::chrono::time_point<std::chrono::system_clock> get_duration();
 private:
 
+    /*!
+     * Music is played in another thread, so that calls to
+     * play don't block, and the caller can keep going. This
+     * occurs in this function.
+     */
     void play_thread();
+
+    /*!
+     * Updates the internal play state of the player,
+     * and notifies the playback thread (to let it pause,
+     * resume etc if needed).
+     *
+     * @param play_state The state to set the play_state to
+     */
+    void set_state(State play_state);
 
     //State
     std::unique_ptr<std::thread> thread;
     uint32_t volume;
     std::atomic<State> play_state;
+
+    std::condition_variable notifier;
+    std::mutex notifier_lock;
 
     bool is_planar = false;
     int plane_size = 0;

@@ -121,7 +121,8 @@ bool MusicPlayer::load(const std::string &filepath)
 
 void MusicPlayer::unload()
 {
-    play_state = State::Stopped;
+    set_state(State::Stopped);
+    notifier.notify_all();
     if(thread && thread->joinable())
         thread->join();
     if(av_container != nullptr)
@@ -133,12 +134,12 @@ void MusicPlayer::unload()
 
 void MusicPlayer::play()
 {
-    play_state = State::Playing;
+    set_state(State::Playing);
 }
 
 void MusicPlayer::pause()
 {
-    play_state = State::Paused;
+    set_state(State::Paused);
 }
 
 std::chrono::time_point<std::chrono::system_clock> MusicPlayer::get_offset()
@@ -168,6 +169,10 @@ std::chrono::time_point<std::chrono::system_clock> MusicPlayer::get_duration()
 
 void MusicPlayer::play_thread()
 {
+    //Acquire lock on notifier
+    std::unique_lock<std::mutex> lock(notifier_lock);
+
+    //Play it
     AVPacket packet;
     av_init_packet(&packet);
 
@@ -181,10 +186,14 @@ void MusicPlayer::play_thread()
     int is_frame_over = 0;
     while(av_read_frame(av_container, &packet) >= 0)
     {
+        notifier.wait(lock, [&]()
+        {
+            return play_state == State::Playing;
+        });
         if(play_state == State::Stopped)
             break;
-        while(play_state != State::Playing)
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+
         if(packet.stream_index == stream_id)
         {
             avcodec_decode_audio4(av_codec_context, frame, &is_frame_over, &packet);
@@ -215,4 +224,10 @@ void MusicPlayer::play_thread()
 
     //Cleanup
     av_frame_free(&frame);
+}
+
+void MusicPlayer::set_state(MusicPlayer::State state)
+{
+    play_state = state;
+    notifier.notify_all();
 }
