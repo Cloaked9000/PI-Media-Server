@@ -6,6 +6,8 @@
 #define MEDIASERVER_MUSICPLAYER_H
 #include <string>
 #include <chrono>
+#include <thread>
+#include <atomic>
 
 extern "C" {
 #include <libavformat/avformat.h>
@@ -16,6 +18,13 @@ extern "C" {
 class MusicPlayer
 {
 public:
+    enum State
+    {
+        Stopped,
+        Playing,
+        Paused
+    };
+
     MusicPlayer();
     virtual ~MusicPlayer();
 
@@ -80,8 +89,12 @@ public:
     std::chrono::time_point<std::chrono::system_clock> get_duration();
 private:
 
+    void play_thread();
+
     //State
+    std::unique_ptr<std::thread> thread;
     uint32_t volume;
+    std::atomic<State> play_state;
 
     bool is_planar = false;
     int plane_size = 0;

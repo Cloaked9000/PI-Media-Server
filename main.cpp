@@ -1,3 +1,4 @@
+#include <iostream>
 #include "include/MusicPlayer.h"
 
 int main(int argc, char **argv)
@@ -9,6 +10,19 @@ int main(int argc, char **argv)
     player.load(argv[1]);
     player.play();
 
+    std::string input;
+    while(true)
+    {
+        std::cin >> input;
+        if(input == "pause")
+        {
+            player.pause();
+        }
+        else if(input == "resume")
+        {
+            player.play();
+        }
+    }
 
     return 0;
 }

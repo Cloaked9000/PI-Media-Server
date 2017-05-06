@@ -9,7 +9,7 @@
 #define MAX_AUDIO_FRAME_SIZE 192000 //1 second of 48khz 32bit audio
 
 MusicPlayer::MusicPlayer()
-: av_container(nullptr), av_codec(nullptr), av_codec_context(nullptr)
+: play_state(State::Stopped), av_container(nullptr), av_codec(nullptr), av_codec_context(nullptr)
 {
     //initialize AO lib
     ao_initialize();
@@ -114,11 +114,16 @@ bool MusicPlayer::load(const std::string &filepath)
         throw std::runtime_error("Failed to initialise libao");
     }
 
+    thread = std::unique_ptr<std::thread>(new std::thread(std::bind(&MusicPlayer::play_thread, this)));
+
     return true;
 }
 
 void MusicPlayer::unload()
 {
+    play_state = State::Stopped;
+    if(thread && thread->joinable())
+        thread->join();
     if(av_container != nullptr)
         avformat_close_input(&av_container);
     if(av_codec != nullptr)
@@ -128,8 +133,41 @@ void MusicPlayer::unload()
 
 void MusicPlayer::play()
 {
-    //todo: move to another thread, we don't want to block
+    play_state = State::Playing;
+}
 
+void MusicPlayer::pause()
+{
+    play_state = State::Paused;
+}
+
+std::chrono::time_point<std::chrono::system_clock> MusicPlayer::get_offset()
+{
+    return std::chrono::system_clock::now();
+}
+
+void MusicPlayer::set_offset(std::chrono::time_point<std::chrono::system_clock> offset)
+{
+
+}
+
+void MusicPlayer::set_volume(uint32_t vol)
+{
+    volume = vol;
+}
+
+uint32_t MusicPlayer::get_volume()
+{
+    return volume;
+}
+
+std::chrono::time_point<std::chrono::system_clock> MusicPlayer::get_duration()
+{
+    return std::chrono::system_clock::now();
+}
+
+void MusicPlayer::play_thread()
+{
     AVPacket packet;
     av_init_packet(&packet);
 
@@ -143,6 +181,10 @@ void MusicPlayer::play()
     int is_frame_over = 0;
     while(av_read_frame(av_container, &packet) >= 0)
     {
+        if(play_state == State::Stopped)
+            break;
+        while(play_state != State::Playing)
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
         if(packet.stream_index == stream_id)
         {
             avcodec_decode_audio4(av_codec_context, frame, &is_frame_over, &packet);
@@ -173,34 +215,4 @@ void MusicPlayer::play()
 
     //Cleanup
     av_frame_free(&frame);
-}
-
-void MusicPlayer::pause()
-{
-
-}
-
-std::chrono::time_point<std::chrono::system_clock> MusicPlayer::get_offset()
-{
-    return std::chrono::system_clock::now();
-}
-
-void MusicPlayer::set_offset(std::chrono::time_point<std::chrono::system_clock> offset)
-{
-
-}
-
-void MusicPlayer::set_volume(uint32_t vol)
-{
-    volume = vol;
-}
-
-uint32_t MusicPlayer::get_volume()
-{
-    return volume;
-}
-
-std::chrono::time_point<std::chrono::system_clock> MusicPlayer::get_duration()
-{
-    return std::chrono::system_clock::now();
 }
