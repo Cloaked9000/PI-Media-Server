@@ -79,6 +79,10 @@
             if(is_playing)
             {
                 song_offset++;
+                if(song_offset > song_duration)
+                {
+                    update_status_bar();
+                }
             }
         }
 
