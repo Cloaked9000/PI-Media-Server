@@ -2,6 +2,7 @@
 // Created by fred on 06/05/17.
 //
 
+#include <dirent.h>
 #include "../include/Filesystem.h"
 
 bool Filesystem::read_file(const std::string &filepath, std::vector<std::string> &lines)
@@ -32,7 +33,7 @@ bool Filesystem::read_file(const std::string &filepath, std::string &file_data)
 
     //Open it
     std::string buffer;
-    std::ifstream file(filepath);
+    std::ifstream file(filepath, std::ios::in | std::ios::binary);
     if(!file.is_open())
         return false;
 
@@ -49,5 +50,28 @@ bool Filesystem::read_file(const std::string &filepath, std::string &file_data)
     file_data.resize((unsigned long)filesz);
     file.read(&file_data[0], filesz);
 
+    return true;
+}
+
+bool Filesystem::list_files(const std::string &filepath, std::vector<std::string> &results)
+{
+    DIR *dir;
+    struct dirent *ent;
+    if((dir = opendir(filepath.c_str())) != NULL)
+    {
+        while((ent = readdir(dir)) != NULL)
+        {
+            if(std::string(ent->d_name) != ".." && std::string(ent->d_name) != ".")
+            {
+                results.emplace_back(ent->d_name);
+            }
+        }
+        closedir(dir);
+    }
+    else
+    {
+        //Couldn't open directory
+        return false;
+    }
     return true;
 }

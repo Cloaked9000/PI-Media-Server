@@ -22,17 +22,20 @@ int main(int argc, char **argv)
         return 1;
 
 
-    //Initialise API Server
+    //Declare components
     APIServer api;
-    if(!api.initialise())
+    MusicStorage music_storage;
+    MusicPlayer player;
+
+    //Initialise
+    if(!music_storage.initialise() || !api.initialise(music_storage, player))
+    {
+        frlog << Log::crit << "Failed to initialise dependencies, exiting!" << Log::end;
         return 1;
+    }
 
     if(argc < 1)
         return 1;
-
-    MusicPlayer player;
-    player.load(argv[1]);
-    player.play();
 
     std::string input;
     while(true)
@@ -51,6 +54,7 @@ int main(int argc, char **argv)
             break;
         }
     }
+
 
     return 0;
 }

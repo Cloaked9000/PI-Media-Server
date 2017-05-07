@@ -10,7 +10,7 @@
 #define MAX_AUDIO_FRAME_SIZE 192000 //1 second of 48khz 32bit audio
 
 MusicPlayer::MusicPlayer()
-: play_state(State::Stopped), av_container(nullptr), av_codec(nullptr), av_codec_context(nullptr)
+: play_state(State::Stopped), av_container(nullptr), av_codec(nullptr), av_codec_context(nullptr), ao_output(nullptr)
 {
     //initialize AO lib
     ao_initialize();
@@ -24,7 +24,6 @@ MusicPlayer::MusicPlayer()
 MusicPlayer::~MusicPlayer()
 {
     unload();
-    ao_close(ao_output);
     ao_shutdown();
 }
 
@@ -92,6 +91,11 @@ bool MusicPlayer::load(const std::string &filepath)
         {
             ao_format.bits = 32;
         }
+        else if(sfmt == AV_SAMPLE_FMT_U8P)
+        {
+            ao_format.bits = 8;
+            is_planar = true;
+        }
         else if(sfmt == AV_SAMPLE_FMT_S16P)
         {
             ao_format.bits = 16;
@@ -119,6 +123,7 @@ bool MusicPlayer::load(const std::string &filepath)
             throw std::runtime_error("Failed to initialise libao");
         }
 
+        play_state = State::Playing;
         thread = std::unique_ptr<std::thread>(new std::thread(std::bind(&MusicPlayer::play_thread, this)));
     }
     catch(const std::exception &e)
@@ -134,13 +139,18 @@ void MusicPlayer::unload()
 {
     frlog << Log::info << "Unloading: " << track_filepath << Log::end;
     set_state(State::Stopped);
-    notifier.notify_all();
     if(thread && thread->joinable())
         thread->join();
     if(av_container != nullptr)
         avformat_close_input(&av_container);
     if(av_codec != nullptr)
         avcodec_close(av_codec_context);
+    if(ao_output != nullptr)
+        ao_close(ao_output);
+    av_container = nullptr;
+    av_codec = nullptr;
+    ao_output = nullptr;
+    volume = 100;
     memset(&ao_format, 0, sizeof(ao_format));
 }
 
@@ -154,12 +164,12 @@ void MusicPlayer::pause()
     set_state(State::Paused);
 }
 
-std::chrono::time_point<std::chrono::system_clock> MusicPlayer::get_offset()
+std::chrono::seconds MusicPlayer::get_offset()
 {
-    return std::chrono::system_clock::now();
+    return std::chrono::seconds(1);
 }
 
-void MusicPlayer::set_offset(std::chrono::time_point<std::chrono::system_clock> offset)
+void MusicPlayer::set_offset(std::chrono::seconds offset)
 {
 
 }
@@ -174,15 +184,15 @@ uint32_t MusicPlayer::get_volume()
     return volume;
 }
 
-std::chrono::time_point<std::chrono::system_clock> MusicPlayer::get_duration()
+std::chrono::seconds MusicPlayer::get_duration()
 {
-    return std::chrono::system_clock::now();
+    if(play_state == State::Stopped)
+        return std::chrono::seconds(1);
+    return std::chrono::seconds(av_container->duration / AV_TIME_BASE);
 }
 
 void MusicPlayer::play_thread()
 {
-    //Acquire lock on notifier
-    std::unique_lock<std::mutex> lock(notifier_lock);
 
     //Play it
     AVPacket packet;
@@ -198,13 +208,18 @@ void MusicPlayer::play_thread()
     int is_frame_over = 0;
     while(av_read_frame(av_container, &packet) >= 0)
     {
-        notifier.wait(lock, [&]()
         {
-            return play_state == State::Playing;
-        });
-        if(play_state == State::Stopped)
-            break;
+            //Acquire lock on notifier
+            std::unique_lock<std::mutex> lock(notifier_lock);
 
+            notifier.wait(lock, [&]()
+            {
+                return play_state != State::Paused;
+            });
+            if(play_state == State::Stopped)
+                break;
+
+        }
 
         if(packet.stream_index == stream_id)
         {
@@ -248,4 +263,15 @@ void MusicPlayer::set_state(MusicPlayer::State state)
 MusicPlayer::State MusicPlayer::get_state()
 {
     return play_state;
+}
+
+const std::string &MusicPlayer::get_filepath()
+{
+    return track_filepath;
+}
+
+const std::string MusicPlayer::state_to_string(MusicPlayer::State state)
+{
+    static std::string state_strings[] = {"stopped", "playing", "paused"};
+    return state_strings[state];
 }

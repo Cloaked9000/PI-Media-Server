@@ -12,6 +12,8 @@
 #include <frnetlib/HttpResponse.h>
 #include <frnetlib/HttpSocket.h>
 #include <frnetlib/TcpListener.h>
+#include "MusicStorage.h"
+#include "MusicPlayer.h"
 
 
 class APIServer
@@ -19,7 +21,7 @@ class APIServer
 public:
     APIServer();
     virtual ~APIServer();
-    bool initialise();
+    bool initialise(MusicStorage &music_storage, MusicPlayer &player);
 
     /*!
      * Closes the server and cleans up
@@ -46,12 +48,22 @@ private:
      */
     fr::HttpResponse construct_error_response(fr::HttpRequest::RequestStatus type, const std::string &reason);
 
+    fr::HttpResponse handler_list_albums(fr::HttpRequest &request);
+    fr::HttpResponse handler_list_album_songs(fr::HttpRequest &request);
+    fr::HttpResponse handler_play_song(fr::HttpRequest &request);
+    fr::HttpResponse handler_resume_song(fr::HttpRequest &request);
+    fr::HttpResponse handler_pause_song(fr::HttpRequest &request);
+    fr::HttpResponse handler_get_playing(fr::HttpRequest &request);
+
     //Required stuff
     std::unique_ptr<std::thread> server_thread;
     std::atomic<bool> running;
     fr::TcpListener listener;
     std::unordered_map<std::string, std::function<fr::HttpResponse(fr::HttpRequest &)>> uri_handlers;
 
+    //Dependencies
+    MusicStorage *music_storage;
+    MusicPlayer *music_player;
 };
 
 

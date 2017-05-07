@@ -89,6 +89,16 @@ public:
      */
 
     static bool read_file(const std::string &filepath, std::string &file_data);
+
+    /*!
+     * Gets a list of files and folders within a given filepath.
+     *
+     * @param filepath The filepath to get a list of files from
+     * @param results Where to store the filename results
+     * @return True on success, false on failure.
+     */
+    static bool list_files(const std::string &filepath, std::vector<std::string> &results);
+
 };
 
 

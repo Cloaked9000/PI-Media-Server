@@ -22,13 +22,21 @@ class MusicPlayer
 public:
     enum State
     {
-        Stopped,
-        Playing,
-        Paused
+        Stopped = 0,
+        Playing = 1,
+        Paused = 2
     };
 
     MusicPlayer();
     virtual ~MusicPlayer();
+
+    /*!
+     * Converts a 'State' enum value to a printable string.
+     *
+     * @param state The state to convert
+     * @return The printable string of it
+     */
+    const std::string state_to_string(State state);
 
     /*!
      * Loads a soundtrack from a given filepath,
@@ -59,14 +67,14 @@ public:
      *
      * @return The current playing offset as a time point
      */
-    std::chrono::time_point<std::chrono::system_clock> get_offset();
+    std::chrono::seconds get_offset();
 
     /*!
      * Sets the current playing offset of the track
      *
      * @param offset Where to continue playing from
      */
-    void set_offset(std::chrono::time_point<std::chrono::system_clock> offset);
+    void set_offset(std::chrono::seconds offset);
 
     /*!
      * Sets the playback volume.
@@ -88,7 +96,7 @@ public:
      *
      * @return The tracks' duration.
      */
-    std::chrono::time_point<std::chrono::system_clock> get_duration();
+    std::chrono::seconds get_duration();
 
     /*!
      * Gets the playback state. Paused/playing/stopped etc.
@@ -96,6 +104,13 @@ public:
      * @return Current playback state
      */
     State get_state();
+
+    /*!
+     * Gets the filepath of the track being played
+     *
+     * @return The track filepath
+     */
+    const std::string &get_filepath();
 
 private:
 
