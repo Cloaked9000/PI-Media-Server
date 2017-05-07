@@ -193,6 +193,8 @@ fr::HttpResponse APIServer::handler_play_song(fr::HttpRequest &request)
     music_player->playlist.set_playing(std::make_pair(request.header("album_name"), request.header("song_name")));
     music_player->play();
 
+    while(music_player->get_duration().count() == 1);
+
     json details;
     details["status"] = STATUS_SUCCESS;
 
@@ -251,6 +253,8 @@ fr::HttpResponse APIServer::handler_skip_next(fr::HttpRequest &request)
     music_player->unload();
     music_player->play();
 
+    while(music_player->get_duration().count() == 1);
+
     json details;
     details["status"] = STATUS_SUCCESS;
 
@@ -265,6 +269,8 @@ fr::HttpResponse APIServer::handler_skip_prior(fr::HttpRequest &request)
     music_player->playlist.skip_prior();
     music_player->unload();
     music_player->play();
+
+    while(music_player->get_duration().count() == 1);
 
     json details;
     details["status"] = STATUS_SUCCESS;

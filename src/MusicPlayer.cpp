@@ -33,6 +33,7 @@ bool MusicPlayer::load(const std::string &filepath, bool wait_for_thread)
     {
         //Unload anything previously loaded
         unload(wait_for_thread);
+        std::lock_guard<std::mutex> guard(lock);
         track_filepath = filepath;
         frlog << Log::info << "Loading track: " << filepath << Log::end;
 
@@ -137,6 +138,7 @@ bool MusicPlayer::load(const std::string &filepath, bool wait_for_thread)
 
 void MusicPlayer::unload(bool wait_for_thread)
 {
+    std::lock_guard<std::mutex> guard(lock);
     frlog << Log::info << "Unloading: " << track_filepath << Log::end;
     set_state(State::Stopped);
     loaded = false;
@@ -155,11 +157,13 @@ void MusicPlayer::unload(bool wait_for_thread)
     av_container = nullptr;
     av_codec = nullptr;
     ao_output = nullptr;
+    play_offset = 0;
     memset(&ao_format, 0, sizeof(ao_format));
 }
 
 void MusicPlayer::play()
 {
+    std::lock_guard<std::mutex> guard(lock);
     set_state(State::Playing);
     if(!thread)
     {
@@ -169,12 +173,14 @@ void MusicPlayer::play()
 
 void MusicPlayer::pause()
 {
+    std::lock_guard<std::mutex> guard(lock);
     set_state(State::Paused);
 }
 
 std::chrono::seconds MusicPlayer::get_offset()
 {
-    return std::chrono::seconds(1);
+    std::lock_guard<std::mutex> guard(lock);
+    return std::chrono::seconds(play_offset);
 }
 
 void MusicPlayer::set_offset(std::chrono::seconds offset)
@@ -184,7 +190,8 @@ void MusicPlayer::set_offset(std::chrono::seconds offset)
 
 std::chrono::seconds MusicPlayer::get_duration()
 {
-    if(play_state == State::Stopped)
+    std::lock_guard<std::mutex> guard(lock);
+    if(av_container == nullptr)
         return std::chrono::seconds(1);
     return std::chrono::seconds(av_container->duration / AV_TIME_BASE);
 }
@@ -229,8 +236,12 @@ void MusicPlayer::play_thread()
             if(packet.stream_index == stream_id)
             {
                 avcodec_decode_audio4(av_codec_context, frame, &is_frame_over, &packet);
+
                 if(is_frame_over)
                 {
+                    //Update play offset
+                    play_offset = (av_container->streams[stream_id]->time_base.num * frame->pkt_pts) / av_container->streams[stream_id]->time_base.den;
+
                     //If it's planar, convert to non-planar first
                     if(is_planar)
                     {

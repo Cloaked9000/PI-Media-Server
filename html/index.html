@@ -32,6 +32,8 @@
 
 <script type="application/javascript">
         var is_playing = false;
+        var song_duration = 0;
+        var song_offset = 0;
 
         function update_status_bar()
         {
@@ -46,7 +48,12 @@
                 document.getElementById("track_title").innerHTML = "<marquee>" + json["album_name"] + " - " + json["track_name"] + "</marquee>";
 
                 //Update track length
+                song_duration = json["track_duration"];
                 document.getElementById("track_duration").innerHTML = Math.floor(json["track_duration"] / 60) + ":" + json["track_duration"] % 60;
+
+                //Update track offset
+                song_offset = json["track_offset"];
+                update_progress_bar();
 
                 //Update play/pause button
                 if(json["track_state"] === "playing")
@@ -61,6 +68,18 @@
                 }
             };
             request.send();
+        }
+
+        window.setInterval(function() {update_progress_bar()}, 1000);
+
+        function update_progress_bar()
+        {
+            document.getElementById("progress_bar").style.width = (song_offset / song_duration) * 100 + "%";
+            document.getElementById("track_offset").innerHTML = Math.floor(song_offset / 60) + ":" + song_offset % 60;
+            if(is_playing)
+            {
+                song_offset++;
+            }
         }
 
         function play_button()

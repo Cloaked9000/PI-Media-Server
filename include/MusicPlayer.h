@@ -126,6 +126,8 @@ private:
     std::atomic<State> play_state;
     std::string track_filepath;
     std::atomic<bool> loaded;
+    std::atomic<uint32_t> play_offset;
+    std::mutex lock;
 
     std::condition_variable notifier;
     std::mutex notifier_lock;

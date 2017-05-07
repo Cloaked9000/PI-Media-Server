@@ -126,7 +126,10 @@ body {
 
 #progress_bar
 {
-
+    display: inline-block;
+    background-color: #448AFF;
+    height: 100%;
+    width: 0%;
 }
 
 .unselectable {

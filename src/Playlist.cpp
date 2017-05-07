@@ -34,10 +34,8 @@ std::pair<Playlist::Album, Playlist::Track> Playlist::skip_next()
     if(queue.empty())
         return {"NULL", "NULL"};
 
-    if(current_track == queue.end())
+    if(current_track == queue.end() || ++current_track == queue.end())
         current_track = queue.begin();
-    else
-        current_track++;
 
     return *current_track;
 }
