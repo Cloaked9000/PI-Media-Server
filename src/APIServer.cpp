@@ -6,6 +6,7 @@
 #include "../include/Log.h"
 #include "../include/Filesystem.h"
 #include "../include/MusicPlayer.h"
+#include "../include/ALSAController.h"
 #include <nlohmann/json.hpp>
 #define STATUS_SUCCESS "success"
 #define STATUS_FAILED "failed"
@@ -23,6 +24,8 @@ APIServer::APIServer()
     uri_handlers["/api/control/resume"] = std::bind(&APIServer::handler_resume_song, this, std::placeholders::_1);
     uri_handlers["/api/control/pause"] = std::bind(&APIServer::handler_pause_song, this, std::placeholders::_1);
     uri_handlers["/api/info/get_playing"] = std::bind(&APIServer::handler_get_playing, this, std::placeholders::_1);
+    uri_handlers["/api/control/skip_next"] = std::bind(&APIServer::handler_skip_next, this, std::placeholders::_1);
+    uri_handlers["/api/control/skip_prior"] = std::bind(&APIServer::handler_skip_prior, this, std::placeholders::_1);
 }
 
 APIServer::~APIServer()
@@ -126,8 +129,7 @@ void APIServer::server_loop()
                       << ": " << e.what() << Log::end;
             }
         }
-
-
+        client.close_socket();
     }
 }
 
@@ -182,10 +184,13 @@ fr::HttpResponse APIServer::handler_play_song(fr::HttpRequest &request)
         return construct_error_response(fr::HttpRequest::RequestStatus::BadRequest, "Missing HEADER parameters");
     }
 
-    if(!music_player->load(MUSIC_DIRECTORY + request.header("album_name") + "/" + request.header("song_name")))
-    {
-        return construct_error_response(fr::HttpRequest::RequestStatus::BadRequest, "No such song");
-    }
+    //Add album to player's playlist
+    music_player->unload();
+    music_player->playlist.clear();
+    std::vector<std::string> tracks = music_storage->list_album_songs(request.header("album_name"));
+    for(const auto &c : tracks)
+        music_player->playlist.enqueue(std::make_pair(request.header("album_name"), c));
+    music_player->playlist.set_playing(std::make_pair(request.header("album_name"), request.header("song_name")));
     music_player->play();
 
     json details;
@@ -227,11 +232,42 @@ fr::HttpResponse APIServer::handler_get_playing(fr::HttpRequest &request)
 {
     json details;
     details["status"] = STATUS_SUCCESS;
-    details["track_name"] = music_player->get_filepath();
+    details["album_name"] = music_player->playlist.get_playing().first;
+    details["track_name"] = music_player->playlist.get_playing().second;
     details["track_state"] = music_player->state_to_string(music_player->get_state());
     details["track_duration"] = std::to_string(music_player->get_duration().count());
     details["track_offset"] = std::to_string(music_player->get_offset().count());
-    details["track_volume"] = music_player->get_volume();
+    details["track_volume"] = ALSAController::get()->get_volume();
+
+    fr::HttpResponse response;
+    response.header("Content-Type") = "application/json";
+    response.set_body(details.dump());
+    return response;
+}
+
+fr::HttpResponse APIServer::handler_skip_next(fr::HttpRequest &request)
+{
+    music_player->playlist.skip_next();
+    music_player->unload();
+    music_player->play();
+
+    json details;
+    details["status"] = STATUS_SUCCESS;
+
+    fr::HttpResponse response;
+    response.header("Content-Type") = "application/json";
+    response.set_body(details.dump());
+    return response;
+}
+
+fr::HttpResponse APIServer::handler_skip_prior(fr::HttpRequest &request)
+{
+    music_player->playlist.skip_prior();
+    music_player->unload();
+    music_player->play();
+
+    json details;
+    details["status"] = STATUS_SUCCESS;
 
     fr::HttpResponse response;
     response.header("Content-Type") = "application/json";

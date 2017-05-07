@@ -10,6 +10,7 @@
 #include <atomic>
 #include <mutex>
 #include <condition_variable>
+#include "Playlist.h"
 
 extern "C" {
 #include <libavformat/avformat.h>
@@ -43,14 +44,17 @@ public:
      * should be followed up with a call to 'play'.
      *
      * @param filepath A valid filepath to some media that can be loaded
+     * @param wait_for_thread Should play thread be stopped first?
      * @return True on success, false on failure.
      */
-    bool load(const std::string &filepath);
+    bool load(const std::string &filepath, bool wait_for_thread = true);
 
     /*!
      * Unloads the given track
+     *
+     * @param wait_for_thread Should the play thread be stopped first?
      */
-    void unload();
+    void unload(bool wait_for_thread = true);
 
     /*!
      * Starts/resumes playing the track
@@ -77,21 +81,6 @@ public:
     void set_offset(std::chrono::seconds offset);
 
     /*!
-     * Sets the playback volume.
-     * Should be a value between 0 and 100.
-     *
-     * @param volume The volume to use
-     */
-    void set_volume(uint32_t volume);
-
-    /*!
-     * Gets the current track volume.
-     *
-     * @return The track volume
-     */
-    uint32_t get_volume();
-
-    /*!
      * Gets the track's duration.
      *
      * @return The tracks' duration.
@@ -111,6 +100,8 @@ public:
      * @return The track filepath
      */
     const std::string &get_filepath();
+
+    Playlist playlist;
 
 private:
 
@@ -132,9 +123,9 @@ private:
 
     //State
     std::unique_ptr<std::thread> thread;
-    uint32_t volume;
     std::atomic<State> play_state;
     std::string track_filepath;
+    std::atomic<bool> loaded;
 
     std::condition_variable notifier;
     std::mutex notifier_lock;

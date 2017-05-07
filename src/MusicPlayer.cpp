@@ -27,12 +27,12 @@ MusicPlayer::~MusicPlayer()
     ao_shutdown();
 }
 
-bool MusicPlayer::load(const std::string &filepath)
+bool MusicPlayer::load(const std::string &filepath, bool wait_for_thread)
 {
     try
     {
         //Unload anything previously loaded
-        unload();
+        unload(wait_for_thread);
         track_filepath = filepath;
         frlog << Log::info << "Loading track: " << filepath << Log::end;
 
@@ -123,8 +123,8 @@ bool MusicPlayer::load(const std::string &filepath)
             throw std::runtime_error("Failed to initialise libao");
         }
 
-        play_state = State::Playing;
-        thread = std::unique_ptr<std::thread>(new std::thread(std::bind(&MusicPlayer::play_thread, this)));
+        play_state = State::Paused;
+        loaded = true;
     }
     catch(const std::exception &e)
     {
@@ -135,12 +135,17 @@ bool MusicPlayer::load(const std::string &filepath)
     return true;
 }
 
-void MusicPlayer::unload()
+void MusicPlayer::unload(bool wait_for_thread)
 {
     frlog << Log::info << "Unloading: " << track_filepath << Log::end;
     set_state(State::Stopped);
-    if(thread && thread->joinable())
-        thread->join();
+    loaded = false;
+    if(wait_for_thread && thread)
+    {
+        if(thread->joinable())
+            thread->join();
+        thread = nullptr;
+    }
     if(av_container != nullptr)
         avformat_close_input(&av_container);
     if(av_codec != nullptr)
@@ -150,13 +155,16 @@ void MusicPlayer::unload()
     av_container = nullptr;
     av_codec = nullptr;
     ao_output = nullptr;
-    volume = 100;
     memset(&ao_format, 0, sizeof(ao_format));
 }
 
 void MusicPlayer::play()
 {
     set_state(State::Playing);
+    if(!thread)
+    {
+        thread = std::unique_ptr<std::thread>(new std::thread(std::bind(&MusicPlayer::play_thread, this)));
+    }
 }
 
 void MusicPlayer::pause()
@@ -174,16 +182,6 @@ void MusicPlayer::set_offset(std::chrono::seconds offset)
 
 }
 
-void MusicPlayer::set_volume(uint32_t vol)
-{
-    volume = vol;
-}
-
-uint32_t MusicPlayer::get_volume()
-{
-    return volume;
-}
-
 std::chrono::seconds MusicPlayer::get_duration()
 {
     if(play_state == State::Stopped)
@@ -193,7 +191,6 @@ std::chrono::seconds MusicPlayer::get_duration()
 
 void MusicPlayer::play_thread()
 {
-
     //Play it
     AVPacket packet;
     av_init_packet(&packet);
@@ -204,49 +201,61 @@ void MusicPlayer::play_thread()
     packet.data = buffer;
     packet.size = buffer_size;
 
-    //Go through the frames, passing them to libao
-    int is_frame_over = 0;
-    while(av_read_frame(av_container, &packet) >= 0)
+    while(play_state != State::Stopped && !playlist.empty())
     {
+        //Load next song in playlist if there is one
+        if(playlist.empty())
+            break;
+        load("music/" + playlist.get_playing().first + "/" + playlist.get_playing().second, false);
+        play_state = State::Playing;
+
+        //Go through the frames, passing them to libao
+        int is_frame_over = 0;
+        while(loaded && av_read_frame(av_container, &packet) >= 0)
         {
-            //Acquire lock on notifier
-            std::unique_lock<std::mutex> lock(notifier_lock);
-
-            notifier.wait(lock, [&]()
             {
-                return play_state != State::Paused;
-            });
-            if(play_state == State::Stopped)
-                break;
+                //Acquire lock on notifier
+                std::unique_lock<std::mutex> lock(notifier_lock);
 
-        }
-
-        if(packet.stream_index == stream_id)
-        {
-            avcodec_decode_audio4(av_codec_context, frame, &is_frame_over, &packet);
-            if(is_frame_over)
-            {
-                //If it's planar, convert to non-planar first
-                if(is_planar)
+                notifier.wait(lock, [&]()
                 {
-                    uint8_t sample_buffer[frame->linesize[0] * ao_format.channels];
-                    uint32_t sample_index = 0;
-                    for(uint32_t a = 0; a < frame->linesize[0]; a += plane_size)
+                    return play_state != State::Paused;
+                });
+                if(play_state == State::Stopped)
+                    break;
+
+            }
+
+            if(packet.stream_index == stream_id)
+            {
+                avcodec_decode_audio4(av_codec_context, frame, &is_frame_over, &packet);
+                if(is_frame_over)
+                {
+                    //If it's planar, convert to non-planar first
+                    if(is_planar)
                     {
-                        for(int channel = 0; channel < ao_format.channels; channel++)
+                        uint8_t sample_buffer[frame->linesize[0] * ao_format.channels];
+                        uint32_t sample_index = 0;
+                        for(uint32_t a = 0; a < frame->linesize[0]; a += plane_size)
                         {
-                            memcpy(sample_buffer + sample_index, frame->extended_data[channel] + a, (size_t)plane_size);
-                            sample_index += plane_size;
+                            for(int channel = 0; channel < ao_format.channels; channel++)
+                            {
+                                memcpy(sample_buffer + sample_index, frame->extended_data[channel] + a, (size_t)plane_size);
+                                sample_index += plane_size;
+                            }
                         }
+                        ao_play(ao_output, (char *)sample_buffer, (uint_32)(frame->linesize[0] * ao_format.channels));
                     }
-                    ao_play(ao_output, (char *)sample_buffer, (uint_32)(frame->linesize[0] * ao_format.channels));
-                }
-                else
-                {
-                    ao_play(ao_output, (char *)frame->extended_data[0], (uint_32)frame->linesize[0]);
+                    else
+                    {
+                        ao_play(ao_output, (char *)frame->extended_data[0], (uint_32)frame->linesize[0]);
+                    }
                 }
             }
         }
+
+        if(play_state != State::Stopped)
+            playlist.skip_next();
     }
 
     //Cleanup
@@ -275,3 +284,4 @@ const std::string MusicPlayer::state_to_string(MusicPlayer::State state)
     static std::string state_strings[] = {"stopped", "playing", "paused"};
     return state_strings[state];
 }
+

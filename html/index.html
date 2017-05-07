@@ -5,17 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 
+<div id="header_bar" class="default-primary-color material_shadow">
+    <span id="track_offset">0:00</span>
+    <span id="track_title">Nothing is playing</span>
+    <span id="track_duration">0:00</span><br>
+    <div id="progress_container" class="material_shadow"><span id="progress_bar"></span></div>
+</div>
+<div id="header_break"></div>
+
 <span id="album_list">
 
 </span>
 
 <div id="footer_break"></div>
-<div id="status_bar" class="default-primary-color material_shadow">
-        <i id="play_button" class="material-icons unselectable text-primary-color" onclick="play_button()">pause_circle_outline</i>
-
-        <span id="seek_box">
-
+<div id="status_bar" class="default-primary-color material_shadow_top">
+        <span id="track_controls">
+            <i id="left_skip_button" class="control_button material-icons unselectable text-primary-color" onclick="skip_left_button()">skip_previous</i>
+            <i id="play_button" class="control_button material-icons unselectable text-primary-color" onclick="play_button()">pause_circle_outline</i>
+            <i id="right_skip_button" class="control_button material-icons unselectable text-primary-color" onclick="skip_right_button()">skip_next</i>
         </span>
+
         <span id="volume_box">
 
         </span>
@@ -30,7 +39,16 @@
             request.open("GET", "/api/info/get_playing");
             request.onload = function()
             {
+                //Parse JSON
                 var json = JSON.parse(request.responseText);
+
+                //Update track title
+                document.getElementById("track_title").innerHTML = "<marquee>" + json["album_name"] + " - " + json["track_name"] + "</marquee>";
+
+                //Update track length
+                document.getElementById("track_duration").innerHTML = Math.floor(json["track_duration"] / 60) + ":" + json["track_duration"] % 60;
+
+                //Update play/pause button
                 if(json["track_state"] === "playing")
                 {
                     document.getElementById("play_button").innerHTML = "pause_circle_outline";
@@ -56,7 +74,22 @@
             {
                 request.open("GET", "/api/control/resume", true);
             }
-            is_playing = !is_playing;
+            request.send();
+            update_status_bar();
+        }
+
+        function skip_left_button()
+        {
+            var request = new XMLHttpRequest();
+            request.open("GET", "/api/control/skip_prior", true);
+            request.send();
+            update_status_bar();
+        }
+
+        function skip_right_button()
+        {
+            var request = new XMLHttpRequest();
+            request.open("GET", "/api/control/skip_next", true);
             request.send();
             update_status_bar();
         }
@@ -119,7 +152,7 @@
             request.setRequestHeader("album_name", album);
             request.setRequestHeader("song_name", song);
             request.send();
-            is_playing = true;
+            update_status_bar();
         }
 
         function clear_album_list()

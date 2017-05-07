@@ -3,6 +3,7 @@
 #include "include/MusicPlayer.h"
 #include "include/Filesystem.h"
 #include "include/APIServer.h"
+#include "include/ALSAController.h"
 
 frlog_define();
 
@@ -52,6 +53,10 @@ int main(int argc, char **argv)
         else if(player.get_state() == MusicPlayer::State::Stopped)
         {
             break;
+        }
+        else
+        {
+            ALSAController::get()->set_volume(std::stoi(input));
         }
     }
 

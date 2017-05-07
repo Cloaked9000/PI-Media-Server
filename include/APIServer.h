@@ -54,6 +54,8 @@ private:
     fr::HttpResponse handler_resume_song(fr::HttpRequest &request);
     fr::HttpResponse handler_pause_song(fr::HttpRequest &request);
     fr::HttpResponse handler_get_playing(fr::HttpRequest &request);
+    fr::HttpResponse handler_skip_next(fr::HttpRequest &request);
+    fr::HttpResponse handler_skip_prior(fr::HttpRequest &request);
 
     //Required stuff
     std::unique_ptr<std::thread> server_thread;
