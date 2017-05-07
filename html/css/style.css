@@ -1,0 +1,63 @@
+body {
+    margin: 0;
+    padding: 0;
+    font-family: sans-serif;
+    -webkit-font-smoothing: antialiased;
+    color: #212121;
+}
+
+#album_list {
+    width: 100%;
+}
+
+.album_entry, .song_entry {
+    width: 100%;
+    margin-bottom: 5px;
+    cursor: pointer;
+}
+
+.album_entry:hover, .song_entry:hover {
+    text-decoration: underline;
+}
+
+#footer_break {
+    display: block;
+    padding-bottom: 100px;
+}
+
+#status_bar {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    height: 100px;
+}
+
+#play_button {
+    height: 100%;
+    line-height: 100px;
+    text-align: center;
+    font-size: 100px;
+}
+
+.unselectable {
+    cursor: pointer;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.material_shadow {
+    box-shadow: 0 -1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);;
+}
+
+.dark-primary-color    { background: #C2185B; }
+.default-primary-color { background: #E91E63; }
+.light-primary-color   { background: #F8BBD0; }
+.text-primary-color    { color: #FFFFFF; }
+.accent-color          { background: #448AFF; }
+.primary-text-color    { color: #212121; }
+.secondary-text-color  { color: #757575; }
+.divider-color         { border-color: #BDBDBD; }

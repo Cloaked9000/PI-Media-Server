@@ -1,0 +1,143 @@
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+
+<span id="album_list">
+
+</span>
+
+<div id="footer_break"></div>
+<div id="status_bar" class="default-primary-color material_shadow">
+        <i id="play_button" class="material-icons unselectable text-primary-color" onclick="play_button()">pause_circle_outline</i>
+
+        <span id="seek_box">
+
+        </span>
+        <span id="volume_box">
+
+        </span>
+    </div>
+
+<script type="application/javascript">
+        var is_playing = false;
+
+        function update_status_bar()
+        {
+            var request = new XMLHttpRequest();
+            request.open("GET", "/api/info/get_playing");
+            request.onload = function()
+            {
+                var json = JSON.parse(request.responseText);
+                if(json["track_state"] === "playing")
+                {
+                    document.getElementById("play_button").innerHTML = "pause_circle_outline";
+                    is_playing = true;
+                }
+                else
+                {
+                    document.getElementById("play_button").innerHTML = "play_circle_outline";
+                    is_playing = false;
+                }
+            };
+            request.send();
+        }
+
+        function play_button()
+        {
+            var request = new XMLHttpRequest();
+            if(is_playing)
+            {
+                request.open("GET", "/api/control/pause", true);
+            }
+            else
+            {
+                request.open("GET", "/api/control/resume", true);
+            }
+            is_playing = !is_playing;
+            request.send();
+            update_status_bar();
+        }
+
+        function load_album_list()
+        {
+            clear_album_list();
+            var request = new XMLHttpRequest();
+            request.open("GET", "/api/albums/list");
+            request.onload = function()
+            {
+                //Create an album element, and insert it, for each album in the json array
+                var album_list = JSON.parse(request.responseText);
+                for(var a = 0; a < album_list["albums"].length; a++)
+                {
+                    var new_album = document.createElement("div");
+                    new_album.className = "album_entry";
+                    new_album.innerHTML = album_list["albums"][a];
+                    new_album.onclick = album_select;
+
+                    document.getElementById("album_list").appendChild(new_album);
+                }
+            };
+            request.send();
+        }
+
+        function album_select()
+        {
+            //Store album name
+            var album_name = this.innerHTML;
+
+            //Request songs in that album
+            var request = new XMLHttpRequest();
+            request.open("GET", "/api/albums/list_songs");
+            request.setRequestHeader("album_name", album_name);
+            request.onload = function()
+            {
+                //Clear elements from view, to replace with song list
+                clear_album_list();
+
+                //Create a song element for each song in the album, and insert it into the menu
+                var song_list = JSON.parse(request.responseText);
+                for(var a = 0; a < song_list["album_songs"].length; a++)
+                {
+                    var new_song = document.createElement("div");
+                    document.getElementById("album_list").appendChild(new_song);
+                    new_song.className = "song_entry";
+                    new_song.innerHTML = song_list["album_songs"][a];
+                    new_song.onclick = function() { play_song(album_name, this.innerHTML)};
+                }
+            };
+            request.send();
+        }
+
+        function play_song(album, song)
+        {
+            load_album_list();
+            var request = new XMLHttpRequest;
+            request.open("GET", "/api/songs/play");
+            request.setRequestHeader("album_name", album);
+            request.setRequestHeader("song_name", song);
+            request.send();
+            is_playing = true;
+        }
+
+        function clear_album_list()
+        {
+            var album_container = document.getElementById("album_list");
+            while(album_container.hasChildNodes())
+            {
+                album_container.removeChild(album_container.lastChild);
+            }
+        }
+
+        function on_load()
+        {
+            //Fill album list
+            load_album_list();
+            update_status_bar();
+        }
+
+        window.onload = on_load();
+    </script>
+</html>
