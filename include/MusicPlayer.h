@@ -101,6 +101,13 @@ public:
      */
     const std::string &get_filepath();
 
+    /*!
+     * Gets the binary data behind the album cover
+     *
+     * @return A string containing the binary image
+     */
+    const std::string &get_album_cover();
+
     Playlist playlist;
 
 private:
@@ -127,6 +134,7 @@ private:
     std::string track_filepath;
     std::atomic<bool> loaded;
     std::atomic<uint32_t> play_offset;
+    std::string cover_image;
     std::mutex lock;
 
     std::condition_variable notifier;

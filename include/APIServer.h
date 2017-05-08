@@ -48,20 +48,25 @@ private:
      */
     fr::HttpResponse construct_error_response(fr::HttpRequest::RequestStatus type, const std::string &reason);
 
-    fr::HttpResponse handler_list_albums(fr::HttpRequest &request);
-    fr::HttpResponse handler_list_album_songs(fr::HttpRequest &request);
-    fr::HttpResponse handler_play_song(fr::HttpRequest &request);
-    fr::HttpResponse handler_resume_song(fr::HttpRequest &request);
-    fr::HttpResponse handler_pause_song(fr::HttpRequest &request);
-    fr::HttpResponse handler_get_playing(fr::HttpRequest &request);
-    fr::HttpResponse handler_skip_next(fr::HttpRequest &request);
-    fr::HttpResponse handler_skip_prior(fr::HttpRequest &request);
+    typedef std::function<fr::HttpResponse(fr::HttpRequest &, const std::vector<std::string>&)> UriCallback;
+    fr::HttpResponse handler_list_albums(fr::HttpRequest &request, const std::vector<std::string> &args);
+    fr::HttpResponse handler_list_album_songs(fr::HttpRequest &request, const std::vector<std::string> &args);
+    fr::HttpResponse handler_play_song(fr::HttpRequest &request, const std::vector<std::string> &args);
+    fr::HttpResponse handler_resume_song(fr::HttpRequest &request, const std::vector<std::string> &args);
+    fr::HttpResponse handler_pause_song(fr::HttpRequest &request, const std::vector<std::string> &args);
+    fr::HttpResponse handler_get_playing(fr::HttpRequest &request, const std::vector<std::string> &args);
+    fr::HttpResponse handler_skip_next(fr::HttpRequest &request, const std::vector<std::string> &args);
+    fr::HttpResponse handler_skip_prior(fr::HttpRequest &request, const std::vector<std::string> &args);
+    fr::HttpResponse handler_get_album_art(fr::HttpRequest &request, const std::vector<std::string> &args);
 
     //Required stuff
     std::unique_ptr<std::thread> server_thread;
     std::atomic<bool> running;
     fr::TcpListener listener;
-    std::unordered_map<std::string, std::function<fr::HttpResponse(fr::HttpRequest &)>> uri_handlers;
+    void register_uri_handler(std::string uri, UriCallback handler);
+    std::unordered_map<std::string, UriCallback> uri_handlers;
+    std::unordered_map<std::string, UriCallback>::iterator find_handler(const std::string &uri);
+    std::vector<std::string> parse_uri_arguments(const std::string &uri_handler, const std::string &uri);
 
     //Dependencies
     MusicStorage *music_storage;

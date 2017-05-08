@@ -16,6 +16,7 @@ MusicPlayer::MusicPlayer()
     ao_initialize();
     memset(&ao_format, 0, sizeof(ao_format));
     ao_driver = ao_default_driver_id();
+    play_offset = 0;
 
     //Initialise ffmpeg
     av_register_all();
@@ -56,7 +57,10 @@ bool MusicPlayer::load(const std::string &filepath, bool wait_for_thread)
             if(av_container->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO)
             {
                 stream_id = i;
-                break;
+            }
+            else if(av_container->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO)
+            {
+                cover_image = std::string((char*)av_container->streams[i]->attached_pic.data, av_container->streams[i]->attached_pic.size);
             }
         }
         if(stream_id == -1)
@@ -294,5 +298,11 @@ const std::string MusicPlayer::state_to_string(MusicPlayer::State state)
 {
     static std::string state_strings[] = {"stopped", "playing", "paused"};
     return state_strings[state];
+}
+
+const std::string &MusicPlayer::get_album_cover()
+{
+    std::lock_guard<std::mutex> guard(lock);
+    return cover_image;
 }
 

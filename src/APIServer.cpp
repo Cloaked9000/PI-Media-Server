@@ -18,14 +18,15 @@ using json = nlohmann::json;
 APIServer::APIServer()
 : running(false)
 {
-    uri_handlers["/api/albums/list"] = std::bind(&APIServer::handler_list_albums, this, std::placeholders::_1);
-    uri_handlers["/api/albums/list_songs"] = std::bind(&APIServer::handler_list_album_songs, this, std::placeholders::_1);
-    uri_handlers["/api/songs/play"] = std::bind(&APIServer::handler_play_song, this, std::placeholders::_1);
-    uri_handlers["/api/control/resume"] = std::bind(&APIServer::handler_resume_song, this, std::placeholders::_1);
-    uri_handlers["/api/control/pause"] = std::bind(&APIServer::handler_pause_song, this, std::placeholders::_1);
-    uri_handlers["/api/info/get_playing"] = std::bind(&APIServer::handler_get_playing, this, std::placeholders::_1);
-    uri_handlers["/api/control/skip_next"] = std::bind(&APIServer::handler_skip_next, this, std::placeholders::_1);
-    uri_handlers["/api/control/skip_prior"] = std::bind(&APIServer::handler_skip_prior, this, std::placeholders::_1);
+    register_uri_handler("/api/albums/list", std::bind(&APIServer::handler_list_albums, this, std::placeholders::_1, std::placeholders::_2));
+    register_uri_handler("/api/albums/list_songs", std::bind(&APIServer::handler_list_album_songs, this, std::placeholders::_1, std::placeholders::_2));
+    register_uri_handler("/api/songs/play", std::bind(&APIServer::handler_play_song, this, std::placeholders::_1, std::placeholders::_2));
+    register_uri_handler("/api/control/resume", std::bind(&APIServer::handler_resume_song, this, std::placeholders::_1, std::placeholders::_2));
+    register_uri_handler("/api/control/pause", std::bind(&APIServer::handler_pause_song, this, std::placeholders::_1, std::placeholders::_2));
+    register_uri_handler("/api/info/get_playing", std::bind(&APIServer::handler_get_playing, this, std::placeholders::_1, std::placeholders::_2));
+    register_uri_handler("/api/control/skip_next", std::bind(&APIServer::handler_skip_next, this, std::placeholders::_1, std::placeholders::_2));
+    register_uri_handler("/api/control/skip_prior", std::bind(&APIServer::handler_skip_prior, this, std::placeholders::_1, std::placeholders::_2));
+    register_uri_handler("/cover_art/?", std::bind(&APIServer::handler_get_album_art, this, std::placeholders::_1, std::placeholders::_2));
 }
 
 APIServer::~APIServer()
@@ -88,7 +89,7 @@ void APIServer::server_loop()
             continue;
 
         //Pass it off to the correct handler. First making sure it actually exists.
-        auto handler = uri_handlers.find(request.get_uri());
+        auto handler = find_handler(request.get_uri());
         if(handler == uri_handlers.end())
         {
             //Check if it's a html page
@@ -121,7 +122,7 @@ void APIServer::server_loop()
             try
             {
                 //Send the client the result of the handler function
-                client.send(handler->second(request));
+                client.send(handler->second(request, parse_uri_arguments(handler->first, request.get_uri())));
             }
             catch(const std::exception &e)
             {
@@ -148,7 +149,7 @@ fr::HttpResponse APIServer::construct_error_response(fr::HttpRequest::RequestSta
     return response;
 }
 
-fr::HttpResponse APIServer::handler_list_albums(fr::HttpRequest &request)
+fr::HttpResponse APIServer::handler_list_albums(fr::HttpRequest &request, const std::vector<std::string> &args)
 {
     json details;
     details["albums"] = music_storage->list_albums();
@@ -160,7 +161,7 @@ fr::HttpResponse APIServer::handler_list_albums(fr::HttpRequest &request)
     return response;
 }
 
-fr::HttpResponse APIServer::handler_list_album_songs(fr::HttpRequest &request)
+fr::HttpResponse APIServer::handler_list_album_songs(fr::HttpRequest &request, const std::vector<std::string> &args)
 {
     if(!request.header_exists("album_name"))
     {
@@ -177,7 +178,7 @@ fr::HttpResponse APIServer::handler_list_album_songs(fr::HttpRequest &request)
     return response;
 }
 
-fr::HttpResponse APIServer::handler_play_song(fr::HttpRequest &request)
+fr::HttpResponse APIServer::handler_play_song(fr::HttpRequest &request, const std::vector<std::string> &args)
 {
     if(!request.header_exists("album_name") || !request.header_exists("song_name"))
     {
@@ -204,7 +205,7 @@ fr::HttpResponse APIServer::handler_play_song(fr::HttpRequest &request)
     return response;
 }
 
-fr::HttpResponse APIServer::handler_resume_song(fr::HttpRequest &request)
+fr::HttpResponse APIServer::handler_resume_song(fr::HttpRequest &request, const std::vector<std::string> &args)
 {
     music_player->play();
 
@@ -217,7 +218,7 @@ fr::HttpResponse APIServer::handler_resume_song(fr::HttpRequest &request)
     return response;
 }
 
-fr::HttpResponse APIServer::handler_pause_song(fr::HttpRequest &request)
+fr::HttpResponse APIServer::handler_pause_song(fr::HttpRequest &request, const std::vector<std::string> &args)
 {
     music_player->pause();
 
@@ -230,7 +231,7 @@ fr::HttpResponse APIServer::handler_pause_song(fr::HttpRequest &request)
     return response;
 }
 
-fr::HttpResponse APIServer::handler_get_playing(fr::HttpRequest &request)
+fr::HttpResponse APIServer::handler_get_playing(fr::HttpRequest &request, const std::vector<std::string> &args)
 {
     json details;
     details["status"] = STATUS_SUCCESS;
@@ -247,7 +248,7 @@ fr::HttpResponse APIServer::handler_get_playing(fr::HttpRequest &request)
     return response;
 }
 
-fr::HttpResponse APIServer::handler_skip_next(fr::HttpRequest &request)
+fr::HttpResponse APIServer::handler_skip_next(fr::HttpRequest &request, const std::vector<std::string> &args)
 {
     music_player->playlist.skip_next();
     music_player->unload();
@@ -264,7 +265,7 @@ fr::HttpResponse APIServer::handler_skip_next(fr::HttpRequest &request)
     return response;
 }
 
-fr::HttpResponse APIServer::handler_skip_prior(fr::HttpRequest &request)
+fr::HttpResponse APIServer::handler_skip_prior(fr::HttpRequest &request, const std::vector<std::string> &args)
 {
     music_player->playlist.skip_prior();
     music_player->unload();
@@ -280,3 +281,88 @@ fr::HttpResponse APIServer::handler_skip_prior(fr::HttpRequest &request)
     response.set_body(details.dump());
     return response;
 }
+
+fr::HttpResponse APIServer::handler_get_album_art(fr::HttpRequest &request, const std::vector<std::string> &args)
+{
+    //Check we've got all of the arguments
+    if(args.size() < 2)
+        return construct_error_response(fr::Http::BadRequest, "URI should contain both album name and song name.");
+
+    fr::HttpResponse response;
+    response.header("Content-Type") = response.get_mimetype(".jpg");
+    response.set_body(music_player->get_album_cover());
+    return response;
+}
+
+std::unordered_map<std::string, APIServer::UriCallback>::iterator
+APIServer::find_handler(const std::string &uri)
+{
+    auto iter = std::find_if(uri_handlers.begin(), uri_handlers.end(), [&](const auto &elem)
+    {
+        const std::string &str = elem.first;
+
+        //Handler length couldn't logically be longer than the URI
+        if(str.size() > uri.size())
+            return false;
+
+        //Logically, they can't have different lengths, and one have a '/' at the end of the URI
+        if(uri.size() != str.size() && uri[str.size()] != '/')
+            return false;
+
+        //Compare up to the end of URI
+        return uri.compare(0, str.size(), str.c_str()) == 0;
+    });
+    return iter;
+}
+
+void APIServer::register_uri_handler(std::string uri, UriCallback handler)
+{
+    //Safety check
+    if(uri.empty())
+    {
+        frlog << Log::crit << "Attempt to register empty URI handler!" << Log::end;
+        return;
+    }
+
+    //Remove any /?/?
+    auto pos = uri.find("?");
+    if(pos != std::string::npos)
+    {
+        uri.erase(pos, uri.size() - pos);
+    }
+
+    //Remove trailing slashes if any
+    if(uri.back() == '/')
+        uri.erase(uri.size() - 1, 1);
+
+    //Store
+    frlog << Log::info << "Registering API handler: " << uri << Log::end;
+    uri_handlers[uri] = handler;
+}
+
+std::vector<std::string> APIServer::parse_uri_arguments(const std::string &uri_handler, const std::string &uri)
+{
+    std::vector<std::string> args;
+    std::string buffer;
+    for(size_t a = uri_handler.size() + 1; a < uri.size(); a++)
+    {
+        if(uri[a] == '/' && !buffer.empty())
+        {
+            args.emplace_back(std::move(buffer));
+            buffer.clear();
+        }
+        else
+        {
+            buffer += uri[a];
+        }
+    }
+
+    if(!buffer.empty())
+    {
+        args.emplace_back(std::move(buffer));
+        buffer.clear();
+    }
+
+    return args;
+}
+
