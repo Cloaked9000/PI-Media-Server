@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 
-<div id="header_bar" class="default-primary-color material_shadow">
+<div id="header_bar" class="dark-primary-color material_shadow">
     <span id="track_offset">0:00</span>
     <span id="track_title">Nothing is playing</span>
     <span id="track_duration">0:00</span><br>
@@ -17,10 +17,12 @@
 
 </span>
 
-<img id="cover_image">
+<span id="cover_image_container" class="default-primary-color">
+    <img id="cover_image" class="material_shadow" src="images/album_icon.svg">
+</span>
 
 <div id="footer_break"></div>
-<div id="status_bar" class="default-primary-color material_shadow_top">
+<div id="status_bar" class="dark-primary-color material_shadow_top">
         <span id="track_controls">
             <i id="left_skip_button" class="control_button material-icons unselectable text-primary-color" onclick="skip_left_button()">skip_previous</i>
             <i id="play_button" class="control_button material-icons unselectable text-primary-color" onclick="play_button()">pause_circle_outline</i>

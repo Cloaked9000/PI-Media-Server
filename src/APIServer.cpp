@@ -289,8 +289,23 @@ fr::HttpResponse APIServer::handler_get_album_art(fr::HttpRequest &request, cons
         return construct_error_response(fr::Http::BadRequest, "URI should contain both album name and song name.");
 
     fr::HttpResponse response;
-    response.header("Content-Type") = response.get_mimetype(".jpg");
-    response.set_body(music_player->get_album_cover());
+    const std::string &cover_art = music_player->get_album_cover();
+    if(!cover_art.empty())
+    {
+        response.header("Content-Type") = response.get_mimetype(".jpg");
+        response.set_body(music_player->get_album_cover());
+    }
+    else
+    {
+        std::string cover;
+        if(!Filesystem::read_file("html/images/album_icon.svg", cover))
+        {
+            frlog << Log::crit << "Failed to load default album svg" << Log::end;
+            return construct_error_response(fr::Http::InternalServerError, "Failed to find album art, or load the default album icon.");
+        }
+        response.header("Content-Type") = response.get_mimetype(".svg");
+        response.set_body(cover);
+    }
     return response;
 }
 

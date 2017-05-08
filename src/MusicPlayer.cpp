@@ -162,6 +162,7 @@ void MusicPlayer::unload(bool wait_for_thread)
     av_codec = nullptr;
     ao_output = nullptr;
     play_offset = 0;
+    cover_image.clear();
     memset(&ao_format, 0, sizeof(ao_format));
 }
 
