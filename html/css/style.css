@@ -167,6 +167,7 @@ body {
     margin-left: calc(100% + 8px);
     z-index: 0;
     position: absolute;
+    cursor: pointer;
 }
 
 #side_menu {
