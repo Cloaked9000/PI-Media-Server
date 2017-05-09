@@ -18,6 +18,17 @@
 </span>
 
 <span id="cover_image_container" class="default-primary-color">
+    <span id="side_menu">
+        <i id="side_menu_toggle_icon" class="material-icons" onclick="toggle_side_menu()">more_horiz</i>
+        <span id="side_menu_search">
+            <span id="side_menu_search_icon_container">
+                <i id="side_menu_search_icon" class="material-icons" onclick="toggle_side_menu()">search</i>
+            </span>
+        </span>
+        <span id="side_menu_search_container">
+
+        </span>
+    </span>
     <img id="cover_image" class="material_shadow" src="images/album_icon.svg">
 </span>
 
@@ -40,6 +51,14 @@
         var song_offset = 0;
         var song_name;
         var song_album;
+        var side_menu_open = false;
+
+        function toggle_side_menu()
+        {
+            //Close the menu if opened. Open it if closd.
+            document.getElementById("side_menu").setAttribute("class", side_menu_open ? "slide_out" : "slide_in");
+            side_menu_open = !side_menu_open;
+        }
 
         function seconds_to_timestamp(seconds)
         {
@@ -137,6 +156,7 @@
 
         function load_album_list()
         {
+            return;
             clear_album_list();
             var request = new XMLHttpRequest();
             request.open("GET", "/api/albums/list");
