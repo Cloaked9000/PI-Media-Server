@@ -233,6 +233,7 @@ fr::HttpResponse APIServer::handler_pause_song(fr::HttpRequest &request, const s
 
 fr::HttpResponse APIServer::handler_get_playing(fr::HttpRequest &request, const std::vector<std::string> &args)
 {
+    music_player->wait();
     json details;
     details["status"] = STATUS_SUCCESS;
     details["album_name"] = music_player->playlist.get_playing().first;

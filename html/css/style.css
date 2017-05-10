@@ -12,20 +12,6 @@ body {
     color: #212121;
 }
 
-#album_list {
-    width: 100%;
-}
-
-.album_entry, .song_entry {
-    width: 100%;
-    margin-bottom: 5px;
-    cursor: pointer;
-}
-
-.album_entry:hover, .song_entry:hover {
-    text-decoration: underline;
-}
-
 #header_bar {
     width: 100%;
     position: fixed;
@@ -146,7 +132,6 @@ body {
     height: calc(100% - 130px);
     width: 100%;
     display: inline-block;
-    text-align: center;
     position: fixed;
 }
 
@@ -171,7 +156,7 @@ body {
 }
 
 #side_menu {
-    background-color: black;
+    background-color: #F8BBD0;
     width: 90%;
     height: 100%;
     float: left;
@@ -179,7 +164,7 @@ body {
     top: 0;
     display: inline-block;
     position: absolute;
-    /*transform: translateX(-100%);*/
+    transform: translateX(-100%);
     z-index: 1;
 }
 
@@ -187,21 +172,9 @@ body {
     width: 100%;
     height: 50px;
     display: inline-block;
-    background-color: #448AFF;
-}
-
-#side_menu_search_icon {
     color: white;
-    font-size: 24px;
-    margin-top: calc(50% - 12px);
-}
-
-#side_menu_search_icon_container {
-    float: right;
-    background-color: red;
-    height: 100%;
-    width: 20%;
-    position: relative;
+    padding-left: 20px;
+    box-sizing: border-box;
 }
 
 #side_menu_search_container {
@@ -209,6 +182,16 @@ body {
     width: 100%;
     height: 100%;
     display: inline-block;
+}
+
+.search_entry {
+    display: inline-block;
+    width: 100%;
+    height: 50px;
+    line-height: 50px;
+    border-bottom: 1px solid white;
+    margin-top: 2px;
+    text-overflow: ellipsis;
 }
 
 .slide_in {

@@ -108,6 +108,12 @@ public:
      */
     const std::string &get_album_cover();
 
+    void wait()
+    {
+        lock.lock();
+        lock.unlock();
+    }
+
     Playlist playlist;
 
 private:
