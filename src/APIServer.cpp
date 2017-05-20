@@ -26,6 +26,7 @@ APIServer::APIServer()
     register_uri_handler("/api/info/get_playing", std::bind(&APIServer::handler_get_playing, this, std::placeholders::_1, std::placeholders::_2));
     register_uri_handler("/api/control/skip_next", std::bind(&APIServer::handler_skip_next, this, std::placeholders::_1, std::placeholders::_2));
     register_uri_handler("/api/control/skip_prior", std::bind(&APIServer::handler_skip_prior, this, std::placeholders::_1, std::placeholders::_2));
+    register_uri_handler("/api/control/set_volume", std::bind(&APIServer::handler_set_volume, this, std::placeholders::_1, std::placeholders::_2));
     register_uri_handler("/cover_art/?", std::bind(&APIServer::handler_get_album_art, this, std::placeholders::_1, std::placeholders::_2));
 }
 
@@ -380,5 +381,34 @@ std::vector<std::string> APIServer::parse_uri_arguments(const std::string &uri_h
     }
 
     return args;
+}
+
+fr::HttpResponse APIServer::handler_set_volume(fr::HttpRequest &request, const std::vector<std::string> &args)
+{
+    if(!request.header_exists("volume"))
+    {
+        return construct_error_response(fr::HttpRequest::RequestStatus::BadRequest, "Missing HEADER parameters");
+    }
+
+    long new_volume = 0;
+    try
+    {
+        new_volume = std::stoi(request.header("volume"));
+    }
+    catch(const std::exception &e)
+    {
+        return construct_error_response(fr::HttpRequest::BadRequest, "Volume header value is not an integer");
+    }
+
+
+
+    json details;
+    details["status"] = STATUS_SUCCESS;
+
+    fr::HttpResponse response;
+    response.header("Content-Type") = "application/json";
+    response.set_body(details.dump());
+    ALSAController::get()->set_volume(new_volume);
+    return response;
 }
 

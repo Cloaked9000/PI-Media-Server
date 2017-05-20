@@ -14,6 +14,7 @@
 #include <frnetlib/TcpListener.h>
 #include "MusicStorage.h"
 #include "MusicPlayer.h"
+#include "ALSAController.h"
 
 
 class APIServer
@@ -58,6 +59,7 @@ private:
     fr::HttpResponse handler_skip_next(fr::HttpRequest &request, const std::vector<std::string> &args);
     fr::HttpResponse handler_skip_prior(fr::HttpRequest &request, const std::vector<std::string> &args);
     fr::HttpResponse handler_get_album_art(fr::HttpRequest &request, const std::vector<std::string> &args);
+    fr::HttpResponse handler_set_volume(fr::HttpRequest &request, const std::vector<std::string> &args);
 
     //Required stuff
     std::unique_ptr<std::thread> server_thread;

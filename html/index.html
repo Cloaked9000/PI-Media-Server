@@ -15,7 +15,7 @@
 
 <span id="cover_image_container" class="default-primary-color">
     <span id="side_menu" class="material_shadow">
-        <i id="side_menu_toggle_icon" class="material-icons" onclick="toggle_side_menu()">more_horiz</i>
+        <i id="side_menu_toggle_icon" class="material-icons" onclick="toggle_side_menu(); event.preventDefault()">more_horiz</i>
         <input id="side_menu_search" class="material_shadow" placeholder="Search...">
         <span id="side_menu_search_container">
 
@@ -27,13 +27,15 @@
 <div id="footer_break"></div>
 <div id="status_bar" class="dark-primary-color material_shadow_top">
         <span id="track_controls">
-            <i id="left_skip_button" class="control_button material-icons unselectable text-primary-color" onclick="skip_left_button()">skip_previous</i>
-            <i id="play_button" class="control_button material-icons unselectable text-primary-color" onclick="play_button()">pause_circle_outline</i>
-            <i id="right_skip_button" class="control_button material-icons unselectable text-primary-color" onclick="skip_right_button()">skip_next</i>
+            <i id="left_skip_button" class="control_button material-icons unselectable text-primary-color" onclick="skip_left_button(); event.preventDefault()">skip_previous</i>
+            <i id="play_button" class="control_button material-icons unselectable text-primary-color" onclick="play_button(); event.preventDefault()">pause_circle_outline</i>
+            <i id="right_skip_button" class="control_button material-icons unselectable text-primary-color" onclick="skip_right_button(); event.preventDefault()">skip_next</i>
         </span>
-
-        <span id="volume_box">
-
+        <span id="volume_container">
+            <i class="material-icons">volume_up</i>
+            <span id="volume_bar">
+                <span id="volume_slider"></span>
+            </span>
         </span>
     </div>
 
@@ -44,6 +46,46 @@
         var song_name;
         var song_album;
         var side_menu_open = false;
+
+        function register_event_handlers()
+        {
+            document.getElementById('volume_slider').addEventListener('pointerdown', mouseDown, false);
+            window.addEventListener('pointerup', mouseUp, false);
+        }
+
+        function mouseUp()
+        {
+            window.removeEventListener('pointermove', update_volume, true);
+        }
+
+        function mouseDown(e){
+            window.addEventListener('pointermove', update_volume, true);
+        }
+
+
+        function update_volume(event)
+        {
+            event.preventDefault();
+            var slider = document.getElementById("volume_slider");
+            var slider_rect = slider.getBoundingClientRect();
+            var line = document.getElementById("volume_bar");
+            var line_rect = line.getBoundingClientRect();
+            if(event.x > line_rect.left && event.x  < line_rect.left + line_rect.width)
+            {
+                slider.style.position = "absolute";
+                slider.style.left = event.x+'px';
+                slider.style.top = line.x+'px';
+                set_volume(((slider_rect.left - line_rect.left) / line_rect.width) * 100);
+            }
+        }
+
+        function set_volume(volume)
+        {
+            var request = new XMLHttpRequest();
+            request.open("GET", "/api/control/set_volume");
+            request.setRequestHeader("volume", volume);
+            request.send();
+        }
 
         function toggle_side_menu()
         {
@@ -225,11 +267,15 @@
 
         function on_load()
         {
+            //Register event handlers
+            register_event_handlers();
+
             //Fill album list
             load_album_list();
             update_status_bar();
         }
 
         window.onload = on_load();
+
     </script>
 </html>
