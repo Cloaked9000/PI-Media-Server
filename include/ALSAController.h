@@ -24,7 +24,7 @@ private:
     snd_mixer_elem_t *mixer_element;
     long min_volume;
     long max_volume;
-    int volume_scale;
+    float volume_scale;
 };
 
 

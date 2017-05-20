@@ -22,10 +22,13 @@ ALSAController::ALSAController()
     while(mixer_element)
     {
         mixer_element_name = snd_mixer_selem_get_name(mixer_element);
-        if(strcasecmp(mixer_element_name, "Master") == 0)
+        frlog << Log::info << "Mixer name: " << mixer_element_name << Log::end;
+        if(strcasecmp(mixer_element_name, "Master") == 0 || strcasecmp(mixer_element_name, "Speaker") == 0)
         {
             snd_mixer_selem_get_playback_volume_range(mixer_element, &min_volume, &max_volume);
-            volume_scale = (int)(max_volume / 100);
+            max_volume = max_volume == 0 ? 100 : max_volume;
+            volume_scale = (float)max_volume / 100;
+            frlog << Log::info << "Max volume: " << max_volume << ". Volume scale: " << volume_scale << Log::end;
             return;
         }
         mixer_element = snd_mixer_elem_next(mixer_element);

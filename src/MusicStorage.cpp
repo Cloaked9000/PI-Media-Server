@@ -2,6 +2,7 @@
 // Created by fred on 06/05/17.
 //
 
+#include <stdexcept>
 #include "../include/MusicStorage.h"
 #include "../include/Filesystem.h"
 #include "../include/Log.h"

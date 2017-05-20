@@ -106,8 +106,8 @@ public:
     Log &operator<<(Level loglevel)
     {
         //Spinlock using atomic flag, the inline asm is used to pause slightly so we don't waste too many CPU cycles
-        while(lock.test_and_set(std::memory_order_acquire))
-                asm volatile("pause\n": : :"memory");
+        while(lock.test_and_set(std::memory_order_acquire));
+                //asm volatile("pause\n": : :"memory");
 
         logCommit("[" + getCurrentTimestamp() + " " + log_levels[loglevel] + "]: ");
 
