@@ -15,7 +15,7 @@ class ALSAController
 public:
     static std::unique_ptr<ALSAController> &get();
     void set_volume(long val);
-    long get_volume();
+    float get_volume();
     ~ALSAController();
 private:
     ALSAController();

@@ -16,7 +16,7 @@
 <span id="cover_image_container" class="default-primary-color">
     <span id="side_menu" class="material_shadow">
         <i id="side_menu_toggle_icon" class="material-icons" onclick="toggle_side_menu(); event.preventDefault()">more_horiz</i>
-        <input id="side_menu_search" class="material_shadow" placeholder="Search...">
+        <input id="side_menu_search" class="material_shadow" placeholder="Search..." onkeyup="update_search()">
         <span id="side_menu_search_container">
 
         </span>
@@ -46,6 +46,8 @@
         var song_name;
         var song_album;
         var side_menu_open = false;
+        var current_volume = 0;
+        var changing_volume = false;
 
         function register_event_handlers()
         {
@@ -53,38 +55,60 @@
             window.addEventListener('pointerup', mouseUp, false);
         }
 
+        function update_search()
+        {
+            var container = document.getElementById("side_menu_search_container").getElementsByTagName("div");
+            var search = new RegExp(document.getElementById("side_menu_search").value, "i");
+            for(a = 0; a < container.length; a++)
+            {
+                container[a].style.display = container[a].getAttribute("name").search(search) === -1 ? 'none' : 'inline-block';
+            }
+        }
+
         function mouseUp()
         {
+            if(changing_volume === true)
+            {
+                set_volume(current_volume, true);
+                changing_volume = false;
+            }
             window.removeEventListener('pointermove', update_volume, true);
         }
 
         function mouseDown(e){
             window.addEventListener('pointermove', update_volume, true);
+            changing_volume = true;
         }
 
 
         function update_volume(event)
         {
             event.preventDefault();
-            var slider = document.getElementById("volume_slider");
-            var slider_rect = slider.getBoundingClientRect();
             var line = document.getElementById("volume_bar");
             var line_rect = line.getBoundingClientRect();
             if(event.x > line_rect.left && event.x  < line_rect.left + line_rect.width)
             {
-                slider.style.position = "absolute";
-                slider.style.left = event.x+'px';
-                slider.style.top = line.x+'px';
-                set_volume(((slider_rect.left - line_rect.left) / line_rect.width) * 100);
+                set_volume(((event.x - line_rect.left) / line_rect.width) * 100, false);
             }
         }
 
-        function set_volume(volume)
+        function set_volume(volume, update_server)
         {
-            var request = new XMLHttpRequest();
-            request.open("GET", "/api/control/set_volume");
-            request.setRequestHeader("volume", volume);
-            request.send();
+            var slider = document.getElementById("volume_slider");
+            var line = document.getElementById("volume_bar");
+            var line_rect = line.getBoundingClientRect();
+
+            slider.style.position = "absolute";
+            slider.style.left = (line_rect.left + ((line_rect.width  / 100) * volume)) - (slider.getBoundingClientRect().width / 2)+'px';
+
+            if(update_server === true)
+            {
+                var request = new XMLHttpRequest();
+                request.open("GET", "/api/control/set_volume");
+                request.setRequestHeader("volume", volume);
+                request.send();
+            }
+            current_volume = volume;
         }
 
         function toggle_side_menu()
@@ -92,6 +116,10 @@
             //Close the menu if opened. Open it if closd.
             document.getElementById("side_menu").setAttribute("class", side_menu_open ? "slide_out" : "slide_in");
             side_menu_open = !side_menu_open;
+            if(!side_menu_open)
+            {
+                load_album_list();
+            }
         }
 
         function seconds_to_timestamp(seconds)
@@ -122,6 +150,9 @@
                 //Update track offset
                 song_offset = json["track_offset"];
                 update_progress_bar();
+
+                //Update volume
+                set_volume(json["track_volume"], false);
 
                 //Update album art
                 update_album_art();
@@ -201,7 +232,8 @@
                 {
                     var new_album = document.createElement("div");
                     new_album.className = "search_entry material-shadow";
-                    new_album.innerHTML = album_list["albums"][a];
+                    new_album.innerHTML = "<p>" + album_list["albums"][a] + "</p>";
+                    new_album.setAttribute("name", album_list["albums"][a]);
                     new_album.onclick = album_select;
 
                     document.getElementById("side_menu_search_container").appendChild(new_album);
@@ -213,7 +245,10 @@
         function album_select()
         {
             //Store album name
-            var album_name = this.innerHTML;
+            var album_name = this.getAttribute("name");
+
+            //Clear search
+            document.getElementById("side_menu_search").value = "";
 
             //Request songs in that album
             var request = new XMLHttpRequest();
@@ -231,8 +266,9 @@
                     var new_song = document.createElement("div");
                     document.getElementById("side_menu_search_container").appendChild(new_song);
                     new_song.className = "search_entry";
-                    new_song.innerHTML = song_list["album_songs"][a];
-                    new_song.onclick = function() { play_song(album_name, this.innerHTML)};
+                    new_song.innerHTML = "<p>" + song_list["album_songs"][a] + "</p>";
+                    new_song.setAttribute("name", song_list["album_songs"][a]);
+                    new_song.onclick = function() { play_song(album_name, this.getAttribute("name"))};
                 }
             };
             request.send();

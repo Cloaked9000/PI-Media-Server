@@ -3,6 +3,7 @@
 //
 
 #include <stdexcept>
+#include <algorithm>
 #include "../include/MusicStorage.h"
 #include "../include/Filesystem.h"
 #include "../include/Log.h"
@@ -30,6 +31,7 @@ std::vector<std::string> MusicStorage::list_albums()
         frlog << Log::crit << "Failed to enumerate music directory: " << MUSIC_DIRECTORY << Log::end;
         throw std::runtime_error("Failed to enumerate music directory: " + std::string(MUSIC_DIRECTORY));
     }
+    std::sort(files.begin(), files.end());
     return files;
 }
 
@@ -41,5 +43,6 @@ std::vector<std::string> MusicStorage::list_album_songs(const std::string &album
         frlog << Log::crit << "Failed to enumerate music directory: " << MUSIC_DIRECTORY + album_name << Log::end;
         throw std::runtime_error("Failed to enumerate music directory: " + std::string(MUSIC_DIRECTORY + album_name));
     }
+    std::sort(files.begin(), files.end());
     return files;
 }

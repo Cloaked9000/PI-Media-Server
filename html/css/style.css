@@ -118,6 +118,7 @@ body {
     height: 2px;
     margin-top: 14px;
     margin-left: -56px;
+    margin-bottom: 14px;
 }
 
 #progress_container {
@@ -188,7 +189,8 @@ body {
 #side_menu {
     background-color: #F8BBD0;
     width: 90%;
-    height: 100%;
+    height: calc(100% - 80px);
+    padding-bottom: 80px;
     float: left;
     left: 0;
     top: 0;
@@ -202,7 +204,7 @@ body {
     width: 100%;
     height: 50px;
     display: inline-block;
-    color: white;
+    color: black;
     padding-left: 20px;
     box-sizing: border-box;
 }
@@ -222,6 +224,15 @@ body {
     border-bottom: 1px solid white;
     margin-top: 2px;
     text-overflow: ellipsis;
+    cursor: pointer;
+}
+
+.search_entry:hover {
+    color: #448AFF;
+}
+
+.search_entry p {
+    margin-left: 10px;
 }
 
 .slide_in {

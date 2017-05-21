@@ -54,7 +54,7 @@ void ALSAController::set_volume(long val)
     snd_mixer_selem_set_playback_volume_all(mixer_element, val * volume_scale);
 }
 
-long ALSAController::get_volume()
+float ALSAController::get_volume()
 {
     long vol;
     snd_mixer_selem_get_playback_volume(mixer_element,SND_MIXER_SCHN_FRONT_RIGHT, &vol);
