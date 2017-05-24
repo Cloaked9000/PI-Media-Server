@@ -1,4 +1,5 @@
 #include <iostream>
+#include <InternetRadio.h>
 #include "include/Log.h"
 #include "include/MusicPlayer.h"
 #include "include/Filesystem.h"
@@ -22,6 +23,10 @@ int main(int argc, char **argv)
     if(!Log::init("logs/" + std::to_string(std::time(NULL))))
         return 1;
 
+    InternetRadio radio;
+    radio.play_stream("http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/uk/sbr_high/ak/bbc_radio_one.m3u8");
+
+    return 0;
 
     //Declare components
     APIServer api;
