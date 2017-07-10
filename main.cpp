@@ -23,10 +23,10 @@ int main(int argc, char **argv)
     if(!Log::init("logs/" + std::to_string(std::time(NULL))))
         return 1;
 
-    InternetRadio radio;
-    radio.play_stream("http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/uk/sbr_high/ak/bbc_radio_one.m3u8");
-
-    return 0;
+//    InternetRadio radio;
+//    radio.play_stream("http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/uk/sbr_high/ak/bbc_radio_one.m3u8");
+//
+//    return 0;
 
     //Declare components
     APIServer api;
@@ -54,6 +54,10 @@ int main(int argc, char **argv)
         else if(input == "resume")
         {
             player.play();
+        }
+        else if(input == "exit")
+        {
+            return 0;
         }
         else if(player.get_state() == MusicPlayer::State::Stopped)
         {

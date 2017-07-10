@@ -13,6 +13,7 @@ ALSAController::ALSAController()
     //Initialise volume control
     const char *mixer_element_name;
     snd_mixer_open(&alsa_mixer, 0);
+    snd_config_update_free_global();
     snd_mixer_attach(alsa_mixer, "default");
     snd_mixer_selem_register(alsa_mixer, nullptr, nullptr);
     snd_mixer_load(alsa_mixer);
@@ -39,7 +40,7 @@ ALSAController::ALSAController()
 
 ALSAController::~ALSAController()
 {
-    snd_mixer_close(alsa_mixer);
+    snd_mixer_free(alsa_mixer);
 }
 
 std::unique_ptr<ALSAController> &ALSAController::get()

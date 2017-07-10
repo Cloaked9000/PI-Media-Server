@@ -20,7 +20,7 @@ INCLUDE_DIRECTORIES(${ALSA_INCLUDE_DIRS})
 
 set(SOURCE_FILES main.cpp src/MusicPlayer.cpp include/MusicPlayer.h src/APIServer.cpp include/APIServer.h include/Log.h src/Filesystem.cpp include/Filesystem.h src/MusicStorage.cpp include/MusicStorage.h src/ALSAController.cpp include/ALSAController.h src/Playlist.cpp include/Playlist.h src/InternetRadio.cpp include/InternetRadio.h src/StreamDecoderBase.cpp include/StreamDecoderBase.h src/M3UStreamDecoder.cpp include/M3UStreamDecoder.h src/DirectStreamDecoder.cpp include/DirectStreamDecoder.h)
 add_executable(MediaServer ${SOURCE_FILES})
-TARGET_LINK_LIBRARIES(MediaServer ${FRNETLIB_LIBRARIES} -pthread -static-libstdc++)
+TARGET_LINK_LIBRARIES(MediaServer ${FRNETLIB_LIBRARIES} -pthread -static-libstdc++ -lasound)
 TARGET_LINK_LIBRARIES(MediaServer ${FFMPEG_LIBRARIES})
 TARGET_LINK_LIBRARIES(MediaServer ${AO_LIBRARIES})
 TARGET_LINK_LIBRARIES(MediaServer ${ALSA_LIBRARIES})
