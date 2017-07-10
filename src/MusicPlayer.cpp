@@ -18,9 +18,6 @@ MusicPlayer::MusicPlayer()
     ao_driver = ao_default_driver_id();
     play_offset = 0;
 
-    //Initialise
-    av_container = avformat_alloc_context();
-
     //Initialise ffmpeg
     av_register_all();
 }
@@ -29,9 +26,6 @@ MusicPlayer::~MusicPlayer()
 {
     unload();
     ao_shutdown();
-
-    //Cleanup
-    avformat_free_context(av_container);
 }
 
 bool MusicPlayer::load(const std::string &filepath, bool wait_for_thread)
@@ -43,6 +37,9 @@ bool MusicPlayer::load(const std::string &filepath, bool wait_for_thread)
         std::lock_guard<std::mutex> guard(lock);
         track_filepath = filepath;
         frlog << Log::info << "Loading track: " << filepath << Log::end;
+
+        //Initialise av_container
+        av_container = avformat_alloc_context();
 
         //Load the file using ffmpeg
         if(avformat_open_input(&av_container, filepath.c_str(), NULL, NULL) < 0)
@@ -158,7 +155,9 @@ void MusicPlayer::unload(bool wait_for_thread)
         thread.reset();
     }
     avcodec_close(av_codec_context);
-    avformat_close_input(&av_container);
+    if(av_container != nullptr)
+        avformat_close_input(&av_container);
+
     if(ao_output != nullptr)
     {
         ao_close(ao_output);

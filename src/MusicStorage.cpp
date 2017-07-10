@@ -40,7 +40,7 @@ std::vector<std::string> MusicStorage::list_album_songs(const std::string &album
     std::vector<std::string> files;
     if(!Filesystem::list_files(MUSIC_DIRECTORY + album_name, files))
     {
-        frlog << Log::crit << "Failed to enumerate music directory: " << MUSIC_DIRECTORY + album_name << Log::end;
+        frlog << Log::crit << "Failed to enumerate album directory: " << MUSIC_DIRECTORY + album_name << Log::end;
         throw std::runtime_error("Failed to enumerate music directory: " + std::string(MUSIC_DIRECTORY + album_name));
     }
     std::sort(files.begin(), files.end());
