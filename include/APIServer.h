@@ -10,7 +10,6 @@
 #include <atomic>
 #include <frnetlib/HttpRequest.h>
 #include <frnetlib/HttpResponse.h>
-#include <frnetlib/HttpSocket.h>
 #include <frnetlib/TcpListener.h>
 #include "MusicStorage.h"
 #include "MusicPlayer.h"

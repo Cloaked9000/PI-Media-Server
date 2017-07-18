@@ -51,7 +51,7 @@ bool M3UStreamDecoder::play_stream(fr::Socket &&sock, const fr::HttpResponse &re
             //If not a header, download next M3U file
             std::cout << "Non-header: " << page[a] << std::endl;
             fr::URL url(page[a]);
-            fr::HttpSocket<fr::TcpSocket> socket;
+            fr::TcpSocket socket;
             fr::Socket::Status ret = socket.connect(url.get_host(), url.get_port());
             if(ret != fr::Socket::Success)
             {

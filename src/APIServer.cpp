@@ -80,7 +80,7 @@ void APIServer::server_loop()
     while(running)
     {
         //Wait for a connection (it's blocking, don't you worry there)
-        fr::HttpSocket<fr::TcpSocket> client;
+        fr::TcpSocket client;
         if(!listener.accept(client))
             continue;
 

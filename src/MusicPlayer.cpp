@@ -154,7 +154,8 @@ void MusicPlayer::unload(bool wait_for_thread)
             thread->join();
         thread.reset();
     }
-    avcodec_close(av_codec_context);
+    if(av_codec_context != nullptr)
+        avcodec_close(av_codec_context);
     if(av_container != nullptr)
         avformat_close_input(&av_container);
 

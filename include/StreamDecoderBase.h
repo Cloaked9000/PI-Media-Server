@@ -6,7 +6,6 @@
 #define MEDIASERVER_STREAMDECODERBASE_H
 #include <string>
 #include <frnetlib/URL.h>
-#include <frnetlib/HttpSocket.h>
 #include <frnetlib/HttpResponse.h>
 
 class StreamDecoderBase
