@@ -26,7 +26,7 @@ public:
      * @param response The HTTP query received during connection
      * @return True on success, false on failure
      */
-    virtual bool play_stream(fr::Socket &&socket, const fr::HttpResponse &response) override;
+    bool play_stream(fr::Socket &&socket, const fr::HttpResponse &response) override;
 
 private:
     std::pair<std::string, std::string> parse_header(const std::string &header_line);

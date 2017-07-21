@@ -13,8 +13,8 @@
 class MusicStorage
 {
 public:
-    MusicStorage();
-    virtual ~MusicStorage();
+    MusicStorage()= default;
+    virtual ~MusicStorage()= default;
 
     bool initialise();
     std::vector<std::string> list_albums();

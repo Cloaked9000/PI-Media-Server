@@ -57,9 +57,9 @@ bool Filesystem::list_files(const std::string &filepath, std::vector<std::string
 {
     DIR *dir;
     struct dirent *ent;
-    if((dir = opendir(filepath.c_str())) != NULL)
+    if((dir = opendir(filepath.c_str())) != nullptr)
     {
-        while((ent = readdir(dir)) != NULL)
+        while((ent = readdir(dir)) != nullptr)
         {
             if(std::string(ent->d_name) != ".." && std::string(ent->d_name) != ".")
             {

@@ -3,6 +3,7 @@
 //
 
 #include <algorithm>
+#include <random>
 #include "../include/Playlist.h"
 #include "../include/Log.h"
 
@@ -15,7 +16,7 @@ Playlist::Playlist()
 void Playlist::shuffle()
 {
     std::lock_guard<std::mutex> guard(lock);
-    std::random_shuffle(queue.begin(), queue.end()); //Yay STL!
+    std::shuffle(queue.begin(), queue.end(), std::mt19937(std::random_device()())); //Yay STL!
 }
 
 void Playlist::enqueue(const PlaylistQueue &tracks)
@@ -71,11 +72,10 @@ void Playlist::set_playing(const std::pair<Playlist::Album, Playlist::Track> &tr
         frlog << Log::warn << "Failed to set " << track.first << ": " << track.second << " as playing in queue. Not found" << Log::end;
         return;
     }
-    else
-    {
-        frlog << Log::info << "Set " << track.first << ": " << track.second << " as currently queued" << Log::end;
-        current_track = iter;
-    }
+
+    frlog << Log::info << "Set " << track.first << ": " << track.second << " as currently queued" << Log::end;
+    current_track = iter;
+
 }
 
 bool Playlist::empty()

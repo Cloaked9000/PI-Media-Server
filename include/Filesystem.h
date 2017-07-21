@@ -31,7 +31,7 @@ public:
      */
     static inline bool does_filepath_exist(const std::string &filepath)
     {
-        struct stat buffer;
+        struct stat buffer{};
         return (stat(filepath.c_str(), &buffer) == 0);
     }
 
@@ -43,7 +43,7 @@ public:
      */
     static inline FSType get_file_type(const std::string &filepath)
     {
-        struct stat info;
+        struct stat info{};
         if(stat(filepath.c_str(), &info) != 0)
             return FSType::Error;
 

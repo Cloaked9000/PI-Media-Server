@@ -8,16 +8,6 @@
 #include "../include/Filesystem.h"
 #include "../include/Log.h"
 
-MusicStorage::MusicStorage()
-{
-
-}
-
-MusicStorage::~MusicStorage()
-{
-
-}
-
 bool MusicStorage::initialise()
 {
     return true;

@@ -42,17 +42,17 @@ bool MusicPlayer::load(const std::string &filepath, bool wait_for_thread)
         av_container = avformat_alloc_context();
 
         //Load the file using ffmpeg
-        if(avformat_open_input(&av_container, filepath.c_str(), NULL, NULL) < 0)
+        if(avformat_open_input(&av_container, filepath.c_str(), NULL, nullptr) < 0)
         {
             throw std::runtime_error("Could not open file: " + filepath);
         }
 
-        if(avformat_find_stream_info(av_container, NULL) < 0)
+        if(avformat_find_stream_info(av_container, nullptr) < 0)
         {
             throw std::runtime_error("Could not find file info");
         }
 
-        av_dump_format(av_container, 0, filepath.c_str(), false);
+        av_dump_format(av_container, 0, filepath.c_str(), 0);
         stream_id = -1;
         for(int i = 0; i < av_container->nb_streams; i++)
         {
@@ -73,12 +73,12 @@ bool MusicPlayer::load(const std::string &filepath, bool wait_for_thread)
         av_codec_context = av_container->streams[stream_id]->codec;
         av_codec = avcodec_find_decoder(av_codec_context->codec_id);
 
-        if(av_codec == NULL)
+        if(av_codec == nullptr)
         {
             throw std::runtime_error("avcodec_find_decoder() failed, cannot find codec.");
         }
 
-        if(avcodec_open2(av_codec_context, av_codec, NULL) < 0)
+        if(avcodec_open2(av_codec_context, av_codec, nullptr) < 0)
         {
             throw std::runtime_error("avcodec_open2() failed, cannot open codec.");
         }
@@ -122,10 +122,10 @@ bool MusicPlayer::load(const std::string &filepath, bool wait_for_thread)
         ao_format.channels = av_codec_context->channels;
         ao_format.rate = av_codec_context->sample_rate;
         ao_format.byte_format = AO_FMT_NATIVE;
-        ao_format.matrix = 0;
+        ao_format.matrix = nullptr;
 
-        ao_output = ao_open_live(ao_driver, &ao_format, NULL);
-        if(ao_output == NULL)
+        ao_output = ao_open_live(ao_driver, &ao_format, nullptr);
+        if(ao_output == nullptr)
         {
             throw std::runtime_error("Failed to initialise libao");
         }
@@ -175,7 +175,7 @@ void MusicPlayer::play()
     set_state(State::Playing);
     if(!thread)
     {
-        thread = std::unique_ptr<std::thread>(new std::thread(std::bind(&MusicPlayer::play_thread, this)));
+        thread = std::make_unique<std::thread>(std::bind(&MusicPlayer::play_thread, this));
     }
 }
 
@@ -207,7 +207,7 @@ std::chrono::seconds MusicPlayer::get_duration()
 void MusicPlayer::play_thread()
 {
     //Play it
-    AVPacket packet;
+    AVPacket packet{};
     av_init_packet(&packet);
 
     AVFrame *frame = av_frame_alloc();
@@ -245,7 +245,7 @@ void MusicPlayer::play_thread()
             {
                 avcodec_decode_audio4(av_codec_context, frame, &is_frame_over, &packet);
 
-                if(is_frame_over)
+                if(is_frame_over != 0)
                 {
                     //Update play offset
                     play_offset = (av_container->streams[stream_id]->time_base.num * frame->pkt_pts) / av_container->streams[stream_id]->time_base.den;

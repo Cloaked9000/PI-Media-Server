@@ -51,10 +51,9 @@ public:
             std::cout << "Failed to open " << logpath << " for logging!" << std::endl;
             return false;
         }
-        else
-        {
-            frlog << " -- Logging initialised -- " << Log::end;
-        }
+
+        frlog << " -- Logging initialised -- " << Log::end;
+
 
         return true;
     }

@@ -20,7 +20,7 @@ int main(int argc, char **argv)
         }
     }
 
-    if(!Log::init("logs/" + std::to_string(std::time(NULL))))
+    if(!Log::init("logs/" + std::to_string(std::time(nullptr))))
         return 1;
 
 //    InternetRadio radio;

@@ -2,7 +2,7 @@
 // Created by fred on 07/05/17.
 //
 
-#include <string.h>
+#include <cstring>
 #include "../include/ALSAController.h"
 #include "../include/Log.h"
 
@@ -20,7 +20,7 @@ ALSAController::ALSAController()
 
     //Find the mixer element we want
     mixer_element = snd_mixer_first_elem(alsa_mixer);
-    while(mixer_element)
+    while(mixer_element != nullptr)
     {
         mixer_element_name = snd_mixer_selem_get_name(mixer_element);
         frlog << Log::info << "Mixer name: " << mixer_element_name << Log::end;

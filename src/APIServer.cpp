@@ -69,7 +69,7 @@ bool APIServer::initialise(MusicStorage &music_storage_, MusicPlayer &player_)
 
     //Start client thread
     running = true;
-    server_thread = std::unique_ptr<std::thread>(new std::thread(std::bind(&APIServer::server_loop, this)));
+    server_thread = std::make_unique<std::thread>(std::bind(&APIServer::server_loop, this));
 
     return true;
 }
@@ -81,12 +81,12 @@ void APIServer::server_loop()
     {
         //Wait for a connection (it's blocking, don't you worry there)
         fr::TcpSocket client;
-        if(!listener.accept(client))
+        if(listener.accept(client) != fr::Socket::Success)
             continue;
 
         //Accept the clients HTTP request
         fr::HttpRequest request;
-        if(!client.receive(request))
+        if(client.receive(request) != fr::Socket::Success)
             continue;
 
         //Pass it off to the correct handler. First making sure it actually exists.
@@ -342,7 +342,7 @@ APIServer::find_handler(const std::string &uri)
             return false;
 
         //Compare up to the end of URI
-        return uri.compare(0, str.size(), str.c_str()) == 0;
+        return uri.compare(0, str.size(), str) == 0;
     });
     return iter;
 }
