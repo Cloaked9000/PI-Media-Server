@@ -187,7 +187,6 @@ fr::HttpResponse APIServer::handler_play_song(fr::HttpRequest &request, const st
     }
 
     //Add album to player's playlist
-    music_player->unload();
     music_player->playlist.clear();
     std::vector<std::string> tracks = music_storage->list_album_songs(request.header("album_name"));
     for(const auto &c : tracks)
@@ -258,7 +257,6 @@ fr::HttpResponse APIServer::handler_get_playing(fr::HttpRequest &request, const 
 fr::HttpResponse APIServer::handler_skip_next(fr::HttpRequest &request, const std::vector<std::string> &args)
 {
     music_player->playlist.skip_next();
-    music_player->unload();
     music_player->play();
 
     time_t start_wait = std::time(nullptr);
@@ -280,7 +278,6 @@ fr::HttpResponse APIServer::handler_skip_next(fr::HttpRequest &request, const st
 fr::HttpResponse APIServer::handler_skip_prior(fr::HttpRequest &request, const std::vector<std::string> &args)
 {
     music_player->playlist.skip_prior();
-    music_player->unload();
     music_player->play();
 
     time_t start_wait = std::time(nullptr);
